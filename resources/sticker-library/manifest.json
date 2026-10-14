@@ -42,73 +42,73 @@
     },
     {
       "id": "gallery-character-01",
-      "name": "内置角色 01",
+      "name": "苏沐橙",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "苏沐橙"
       ],
       "file": "gallery/character-01.png"
     },
     {
       "id": "gallery-character-02",
-      "name": "内置角色 02",
+      "name": "张佳乐",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "张佳乐"
       ],
       "file": "gallery/character-02.png"
     },
     {
       "id": "gallery-character-03",
-      "name": "内置角色 03",
+      "name": "王杰希",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "王杰希"
       ],
       "file": "gallery/character-03.png"
     },
     {
       "id": "gallery-character-04",
-      "name": "内置角色 04",
+      "name": "黄少天",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "黄少天"
       ],
       "file": "gallery/character-04.png"
     },
     {
       "id": "gallery-character-05",
-      "name": "内置角色 05",
+      "name": "周泽楷",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "周泽楷"
       ],
       "file": "gallery/character-05.png"
     },
     {
       "id": "gallery-character-06",
-      "name": "内置角色 06",
+      "name": "韩文清",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "韩文清"
       ],
       "file": "gallery/character-06.png"
     },
     {
       "id": "gallery-character-07",
-      "name": "内置角色 07",
+      "name": "喻文州",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "喻文州"
       ],
       "file": "gallery/character-07.png"
     },
     {
       "id": "gallery-character-08",
-      "name": "内置角色 08",
+      "name": "叶修",
       "tags": [
-        "内置",
-        "桌宠"
+        "全职高手",
+        "叶修"
       ],
       "file": "gallery/character-08.png"
     }

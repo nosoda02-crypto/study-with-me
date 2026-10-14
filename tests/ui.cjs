@@ -9,8 +9,8 @@ nativeTheme.themeSource='light'
 ipcMain.handle('test:theme',(_event,mode)=>{nativeTheme.themeSource=mode})
 ipcMain.on('test:hub-extension',(event,open)=>BrowserWindow.fromWebContents(event.sender)?.setContentSize(open?720:400,540))
 const pause = ms => new Promise(r => setTimeout(r, ms))
-async function render(hash, width, height) {
-  const win = new BrowserWindow({width,height,useContentSize:true,frame:false,show:false,webPreferences:{preload:path.join(__dirname,'ui-preload.cjs'),sandbox:false}})
+async function render(hash, width, height, args = []) {
+  const win = new BrowserWindow({width,height,useContentSize:true,frame:false,show:false,webPreferences:{preload:path.join(__dirname,'ui-preload.cjs'),sandbox:false,additionalArguments:args}})
   win.webContents.on('console-message', (_e,level,message)=>{if(level>=3) console.error(message)})
   await win.loadFile(path.join(__dirname,'../out/renderer/index.html'),{hash})
   await pause(600)
@@ -199,10 +199,7 @@ app.whenReady().then(async()=>{
   await capture(hub,'backup')
   await click(hub,'导出全部记录');await pause(50)
   assert.match(await hub.webContents.executeJavaScript('document.querySelector(".transfer-message").textContent'),/已导出/)
-  for (const [route,w,h,name] of [['/sprites',380,700,'sprites'],['/window-settings',360,565,'window'],['/notify',340,110,'notification']]) { const win=await render(route,w,h);if(route==='/notify'){assert.match(await win.webContents.executeJavaScript('getComputedStyle(document.querySelector(".notify-card")).backdropFilter'),/blur/);assert.equal(await win.webContents.executeJavaScript('getComputedStyle(document.querySelector(".notify-close")).backgroundColor'),'rgba(0, 0, 0, 0)');assert.equal(await win.webContents.executeJavaScript('parseInt(getComputedStyle(document.querySelector(".notify-card")).borderRadius)>=20'),true);assert.equal(await win.webContents.executeJavaScript('getComputedStyle(document.documentElement).backgroundColor'),'rgba(0, 0, 0, 0)');assert.equal(await win.webContents.executeJavaScript('getComputedStyle(document.body).backgroundColor'),'rgba(0, 0, 0, 0)');assert.equal(await win.webContents.executeJavaScript('!getComputedStyle(document.querySelector(".notify-card")).boxShadow.includes("34px")'),true)
-    // README shot: a bundled Huang Shaotian sticker as the message icon.
-    const icon='data:image/png;base64,'+fs.readFileSync(path.join(__dirname,'../resources/sticker-library/huang-shaotian/huang-shaotian-01.png')).toString('base64')
-    await win.webContents.executeJavaScript(`window.testApi.emit('notify',{title:'今日的小目标，完成了',message:'又向前走了一步。休息一下，继续一起努力。',icon:'${icon}'})`);await pause(300)}await capture(win,name);win.destroy() }
+  for (const [route,w,h,name] of [['/sprites',380,700,'sprites'],['/window-settings',360,565,'window'],['/notify',340,110,'notification']]) { const win=await render(route,w,h);if(route==='/notify'){assert.match(await win.webContents.executeJavaScript('getComputedStyle(document.querySelector(".notify-card")).backdropFilter'),/blur/);assert.equal(await win.webContents.executeJavaScript('getComputedStyle(document.querySelector(".notify-close")).backgroundColor'),'rgba(0, 0, 0, 0)');assert.equal(await win.webContents.executeJavaScript('parseInt(getComputedStyle(document.querySelector(".notify-card")).borderRadius)>=20'),true);assert.equal(await win.webContents.executeJavaScript('getComputedStyle(document.documentElement).backgroundColor'),'rgba(0, 0, 0, 0)');assert.equal(await win.webContents.executeJavaScript('getComputedStyle(document.body).backgroundColor'),'rgba(0, 0, 0, 0)');assert.equal(await win.webContents.executeJavaScript('!getComputedStyle(document.querySelector(".notify-card")).boxShadow.includes("34px")'),true)}await capture(win,name);win.destroy() }
   const cat=await render('',170,170)
   assert.equal(await cat.webContents.executeJavaScript('getComputedStyle(document.querySelector(".scene-stage")).cursor'),'default')
   const press=async()=>{cat.webContents.sendInputEvent({type:'mouseDown',x:85,y:85,globalX:185,globalY:185,button:'left',clickCount:1});cat.webContents.sendInputEvent({type:'mouseUp',x:85,y:85,globalX:185,globalY:185,button:'left',clickCount:1})}
@@ -231,13 +228,6 @@ app.whenReady().then(async()=>{
   assert.equal(await cat.webContents.executeJavaScript('document.querySelectorAll(".pet-bubble").length'),1)
   assert.equal(await cat.webContents.executeJavaScript('document.querySelector(".scene-stage").getBoundingClientRect().top'),278)
   await capture(cat,'pet-bubble')
-  // README hero shot with a bundled character as the pet (taller sprite, taller pet box).
-  const hero='data:image/png;base64,'+fs.readFileSync(path.join(__dirname,'../resources/sticker-library/gallery/character-04.png')).toString('base64')
-  cat.setContentSize(320,600)
-  await cat.webContents.executeJavaScript(`window.testApi.emit('sprites',{idle:'${hero}',sleep:'${hero}'});window.testApi.emit('layout',{bubbleOpen:true,petWidth:170,petHeight:310,petLeft:75,petTop:282,bubbleLeft:0})`);await pause(500)
-  await capture(cat,'pet-bubble-hero')
-  cat.setContentSize(320,448)
-  await cat.webContents.executeJavaScript(`window.testApi.emit('sprites',{});window.testApi.emit('layout',{bubbleOpen:true,petWidth:170,petHeight:170,petLeft:75,petTop:278,bubbleLeft:0})`);await pause(300)
   await cat.webContents.executeJavaScript('window.api.setWindowOpacity(0.3)');await pause(100)
   assert.equal(await cat.webContents.executeJavaScript('getComputedStyle(document.querySelector(".cat-sprite")).opacity'),'0.3')
   assert.equal(await cat.webContents.executeJavaScript('getComputedStyle(document.querySelector(".pet-bubble-anchor")).opacity'),'1')
@@ -248,6 +238,15 @@ app.whenReady().then(async()=>{
   assert.equal(await cat.webContents.executeJavaScript('document.documentElement.style.getPropertyValue("--panel-font-scale")'),'1.3')
   await cat.webContents.executeJavaScript('document.querySelector("[aria-label=收起气泡]").click()');await pause(100)
   assert.equal(await cat.webContents.executeJavaScript('document.querySelectorAll(".pet-bubble").length'),0)
+  // README screenshots with the bundled characters and the author's real settings.
+  const readmePet=await render('',320,600,['--readme-demo'])
+  await readmePet.webContents.executeJavaScript(`window.api.switchWorkState('focus');window.testApi.emit('layout',{bubbleOpen:true,petWidth:170,petHeight:310,petLeft:75,petTop:282,bubbleLeft:0})`);await pause(600)
+  await capture(readmePet,'readme-pet-bubble');readmePet.destroy()
+  const readmeNotify=await render('/notify',340,110,['--readme-demo'])
+  await readmeNotify.webContents.executeJavaScript(`window.api.getSprites().then(s=>window.testApi.emit('notify',{title:'少天',message:'今日的小目标完成了！休息一下再继续吧。',icon:s.notifyIcon}))`);await pause(500)
+  await capture(readmeNotify,'readme-notification');readmeNotify.destroy()
+  const readmeSettings=await render('/hub-detail?detail=notifications&direction=right',320,540,['--readme-demo']);await pause(400)
+  await capture(readmeSettings,'readme-notifications-settings');readmeSettings.destroy()
   console.log('UI checks passed: status switch / pause / reset / diary dates / backup / single & double click. Screenshots: tests/screenshots')
   app.exit(0)
 }).catch(e=>{console.error(e);app.exit(1)})

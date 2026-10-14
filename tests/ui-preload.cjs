@@ -51,5 +51,18 @@ contextBridge.exposeInMainWorld('api', {
   closeCurrentWindow:()=>{},closeNotify:()=>{},setCatVisualBounds:()=>{},setCatPointerThrough:()=>{},reportCatDoubleClick:()=>{double++},reportCatClick:()=>{single++},dragCat:()=>{drags++},
   openSpriteSettingsWindow:()=>{},openWindowSettingsWindow:()=>{},openHubDetail:async detail=>emit('opened-detail',detail),closeHubDetail:()=>emit('closed-detail'),beginHubDetailClose:()=>emit('hub-detail-state',null),resizeHubSplit:()=>{},requestHubDetailClose:()=>emit('hub-detail-request-close'),onHubDetailReveal:f=>{const off=on('hub-detail-reveal',f);setTimeout(()=>emit('hub-detail-reveal'),50);return off},onHubDetailCloseRequested:f=>on('hub-detail-request-close',f),onHubDetailState:f=>on('hub-detail-state',f),onHubDetailChanged:f=>on('hub-detail-set',f),onHubOpenDetail:f=>on('hub-detail',f),exportBackup:async()=> 'test-backup.json',importBackup:async()=>true
 })
+// README screenshots (window opened with --readme-demo): the bundled stickers with
+// their real names/tags, and the pet/message settings the author actually uses.
+if (process.argv.includes('--readme-demo')) {
+  const path = require('path'), fs = require('fs'), { pathToFileURL } = require('url')
+  const dir = path.join(__dirname, '../resources/sticker-library')
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'))
+  const url = file => pathToFileURL(path.join(dir, file)).href
+  userSprites = manifest.items.map(item => ({ id: item.id, name: item.name, tags: item.tags, url: url(item.file) }))
+  userSpriteTags = [...new Set(userSprites.flatMap(item => item.tags))]
+  const pet = url('gallery/character-04.png')
+  Object.assign(sprites, { idle: pet, sleep: pet, notifyIcon: url('huang-shaotian/huang-shaotian-01.png') })
+  noticePrefs = { ...noticePrefs, petName: '少天', displaySeconds: 10, randomIconTags: manifest.randomIconTags }
+}
 contextBridge.exposeInMainWorld('testApi',{counts:()=>({single,double,drags}),entries:()=>entries,noticePrefs:()=>noticePrefs,workStates:()=>workStates,emit:(event,...args)=>emit(event,...args)})
 setTimeout(()=>emit('notify',{title:'今日的小目标，完成了',message:'又向前走了一步。休息一下，继续一起努力。'}),500)
