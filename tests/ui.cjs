@@ -228,6 +228,13 @@ app.whenReady().then(async()=>{
   assert.equal(await cat.webContents.executeJavaScript('document.querySelectorAll(".pet-bubble").length'),1)
   assert.equal(await cat.webContents.executeJavaScript('document.querySelector(".scene-stage").getBoundingClientRect().top'),278)
   await capture(cat,'pet-bubble')
+  // README hero shot with a bundled character as the pet (taller sprite, taller pet box).
+  const hero='data:image/png;base64,'+fs.readFileSync(path.join(__dirname,'../resources/sticker-library/gallery/character-04.png')).toString('base64')
+  cat.setContentSize(320,600)
+  await cat.webContents.executeJavaScript(`window.testApi.emit('sprites',{idle:'${hero}',sleep:'${hero}'});window.testApi.emit('layout',{bubbleOpen:true,petWidth:170,petHeight:310,petLeft:75,petTop:282,bubbleLeft:0})`);await pause(500)
+  await capture(cat,'pet-bubble-hero')
+  cat.setContentSize(320,448)
+  await cat.webContents.executeJavaScript(`window.testApi.emit('sprites',{});window.testApi.emit('layout',{bubbleOpen:true,petWidth:170,petHeight:170,petLeft:75,petTop:278,bubbleLeft:0})`);await pause(300)
   await cat.webContents.executeJavaScript('window.api.setWindowOpacity(0.3)');await pause(100)
   assert.equal(await cat.webContents.executeJavaScript('getComputedStyle(document.querySelector(".cat-sprite")).opacity'),'0.3')
   assert.equal(await cat.webContents.executeJavaScript('getComputedStyle(document.querySelector(".pet-bubble-anchor")).opacity'),'1')
