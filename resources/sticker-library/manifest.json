@@ -1,0 +1,116 @@
+{
+  "randomIconTags": [
+    "全职高手",
+    "黄少天"
+  ],
+  "items": [
+    {
+      "id": "huang-shaotian-01",
+      "name": "黄少天 01",
+      "tags": [
+        "全职高手",
+        "黄少天"
+      ],
+      "file": "huang-shaotian/huang-shaotian-01.png"
+    },
+    {
+      "id": "huang-shaotian-02",
+      "name": "黄少天 02",
+      "tags": [
+        "全职高手",
+        "黄少天"
+      ],
+      "file": "huang-shaotian/huang-shaotian-02.png"
+    },
+    {
+      "id": "huang-shaotian-03",
+      "name": "黄少天 03",
+      "tags": [
+        "全职高手",
+        "黄少天"
+      ],
+      "file": "huang-shaotian/huang-shaotian-03.png"
+    },
+    {
+      "id": "huang-shaotian-04",
+      "name": "黄少天 04",
+      "tags": [
+        "全职高手",
+        "黄少天"
+      ],
+      "file": "huang-shaotian/huang-shaotian-04.png"
+    },
+    {
+      "id": "gallery-character-01",
+      "name": "内置角色 01",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-01.png"
+    },
+    {
+      "id": "gallery-character-02",
+      "name": "内置角色 02",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-02.png"
+    },
+    {
+      "id": "gallery-character-03",
+      "name": "内置角色 03",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-03.png"
+    },
+    {
+      "id": "gallery-character-04",
+      "name": "内置角色 04",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-04.png"
+    },
+    {
+      "id": "gallery-character-05",
+      "name": "内置角色 05",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-05.png"
+    },
+    {
+      "id": "gallery-character-06",
+      "name": "内置角色 06",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-06.png"
+    },
+    {
+      "id": "gallery-character-07",
+      "name": "内置角色 07",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-07.png"
+    },
+    {
+      "id": "gallery-character-08",
+      "name": "内置角色 08",
+      "tags": [
+        "内置",
+        "桌宠"
+      ],
+      "file": "gallery/character-08.png"
+    }
+  ]
+}

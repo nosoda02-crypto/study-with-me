@@ -1,0 +1,37 @@
+{
+  "name": "study-with-me",
+  "version": "0.1.0",
+  "description": "Study With Me - 桌面猫咪学习伴侣 - 打字统计 / 陪伴时长 / 日记 / 任务",
+  "main": "./out/main/index.js",
+  "author": "Study With Me contributors",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:bg": "npm run build && zsh scripts/start-background.sh",
+    "dev:stop": "zsh scripts/stop-background.sh",
+    "build": "electron-vite build",
+    "postinstall": "electron-builder install-app-deps",
+    "start": "electron-vite preview",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "node --test tests/core.test.cjs",
+    "test:ui": "npm run build && electron tests/ui.cjs"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "uiohook-napi": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2"
+  },
+  "license": "MIT"
+}

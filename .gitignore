@@ -1,0 +1,13 @@
+node_modules
+out
+dist
+.DS_Store
+*.log
+*.tsbuildinfo
+.study-with-me-dev.pid
+
+# Test / tooling runtime data and generated screenshots
+tests/.electron/
+tests/.electron-layout/
+tests/.runtime/
+tests/screenshots/
