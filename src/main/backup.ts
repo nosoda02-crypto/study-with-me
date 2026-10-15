@@ -10,7 +10,7 @@ import tasks, { getTaskData } from './tasksStore'
 import { getDiaryBackup, replaceDiaryBackup } from './diaryStore'
 import settings from './settingsStore'
 import { workStore, checkpointWorkState, reloadWorkState, type WorkStateSchema } from './workStateStore'
-import { getAllCustomSprites, getSpriteLibraryBackup, listUserSpriteTags, replaceSpriteLibraryBackup, POSES } from './spriteStore'
+import { getAllCustomSprites, getSpriteLibraryBackup, getRemovedSeeds, listUserSpriteTags, replaceSpriteLibraryBackup, POSES } from './spriteStore'
 import study,{getStudyData} from './studyStore'
 import { validStudyInput } from '../shared/study'
 import music,{flushMusic} from './musicStore'
@@ -25,7 +25,7 @@ export function snapshot() {
   flushMusic()
   return { format: 'study-with-me', version: 1, exportedAt: new Date().toISOString(),
     stats: stats.store, tasks: tasks.store,study:study.store,music:music.store, diary: getDiaryBackup(), settings: settings.store,
-    work: workStore.store, sprites: getAllCustomSprites(), spriteLibrary:getSpriteLibraryBackup(),spriteTags:listUserSpriteTags() }
+    work: workStore.store, sprites: getAllCustomSprites(), spriteLibrary:getSpriteLibraryBackup(),spriteTags:listUserSpriteTags(),spriteRemovedSeeds:getRemovedSeeds() }
 }
 
 /** Keep a recoverable full snapshot before an installed application version changes. */
@@ -53,7 +53,7 @@ function segments(v: unknown): boolean {
 export function validateBackup(v: unknown): asserts v is Backup {
   if (!object(v) || v.format !== 'study-with-me' || v.version !== 1 ||
     !object(v.stats) || !object(v.tasks) || !object(v.diary) || !object(v.settings) || !object(v.work) || !object(v.sprites)) throw new Error('不是受支持的 Study With Me 备份文件。')
-  const { stats: s, tasks: t,study:learning,music:listening, diary: d, settings: c, work: w, sprites: p, spriteLibrary, spriteTags } = v
+  const { stats: s, tasks: t,study:learning,music:listening, diary: d, settings: c, work: w, sprites: p, spriteLibrary, spriteTags, spriteRemovedSeeds } = v
   if (![s.totalKeystrokes, s.todayKeystrokes, s.totalRuntimeSeconds].every(number) || !date(s.todayDate) ||
     !Array.isArray(t.items) || !t.items.every(x => object(x) && typeof x.id === 'string' && typeof x.text === 'string' && typeof x.completed === 'boolean' && typeof x.daily === 'boolean' && date(x.lastResetDate)) ||
     new Set(t.items.map(x => x.id)).size !== t.items.length ||
@@ -89,7 +89,8 @@ export function validateBackup(v: unknown): asserts v is Backup {
     !state(w.state) || typeof w.paused !== 'boolean' || (w.startedToday!==undefined&&typeof w.startedToday!=='boolean') || !number(w.checkpoint) ||
     !Object.entries(p).every(([k, x]) => (POSES.includes(k as any) || LEGACY_POSES.includes(k)) && image(x)) ||
     (spriteLibrary!==undefined&&(!Array.isArray(spriteLibrary)||!spriteLibrary.every(x=>object(x)&&typeof x.id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(x.id)&&typeof x.name==='string'&&x.name.length<=40&&((Array.isArray(x.tags)&&x.tags.length<=20&&x.tags.every((tag:any)=>typeof tag==='string'&&tag.length<=40))||(typeof x.folder==='string'&&x.folder.length<=40&&typeof x.character==='string'&&x.character.length<=40&&typeof x.ip==='string'&&x.ip.length<=40))&&image(x.image))||new Set(spriteLibrary.map((x:any)=>x.id)).size!==spriteLibrary.length)) ||
-    (spriteTags!==undefined&&(!Array.isArray(spriteTags)||spriteTags.length>100||!spriteTags.every((tag:any)=>typeof tag==='string'&&tag.trim().length>0&&tag.length<=40)))) throw new Error('备份内容不完整或含有无效数据，未导入。')
+    (spriteTags!==undefined&&(!Array.isArray(spriteTags)||spriteTags.length>100||!spriteTags.every((tag:any)=>typeof tag==='string'&&tag.trim().length>0&&tag.length<=40)))||
+    (spriteRemovedSeeds!==undefined&&(!Array.isArray(spriteRemovedSeeds)||spriteRemovedSeeds.length>500||!spriteRemovedSeeds.every((id:any)=>typeof id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(id))))) throw new Error('备份内容不完整或含有无效数据，未导入。')
 }
 export async function exportBackup(parent: BrowserWindow, prepare: () => void = () => {}): Promise<string | null> {
   const result = await dialog.showSaveDialog(parent, {
@@ -132,7 +133,7 @@ export async function importBackup(parent: BrowserWindow, prepare: () => void = 
     if (existsSync(live)) renameSync(live, old)
     renameSync(staging, live); swapped = true
     stats.store = data.stats; tasks.store = data.tasks;study.store=data.study??{items:[]};music.store=data.music??{enabled:false,history:{}}; replaceDiaryBackup(data.diary); settings.store = { ...PANEL_DEFAULTS, ...data.settings, accentColor:data.settings.accentColor ?? DEFAULT_ACCENT_COLOR, workStates: data.settings.workStates ?? DEFAULT_WORK_STATES, notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(data.settings.notifications ?? {}), templates:{...DEFAULT_NOTIFICATION_PREFERENCES.templates,...(data.settings.notifications?.templates ?? {})},templateIcons:{...DEFAULT_NOTIFICATION_PREFERENCES.templateIcons,...(data.settings.notifications?.templateIcons??{})},randomIconTags:data.settings.notifications?.randomIconTags??(data.settings.notifications as any)?.randomIconFolders??[] }, visualVersion: data.settings.visualVersion ?? 1, theme: data.settings.theme ?? 'system' }
-    replaceSpriteLibraryBackup(data.spriteLibrary ?? [],data.spriteTags??[])
+    replaceSpriteLibraryBackup(data.spriteLibrary ?? [],data.spriteTags??[],data.spriteRemovedSeeds)
     const work: WorkStateSchema = structuredClone(data.work)
     work.startedToday=work.startedToday??work.segments.length>0
     for (const s of work.segments) if (s.endedAt === null) s.endedAt = Math.max(s.startedAt, work.checkpoint)
@@ -144,7 +145,7 @@ export async function importBackup(parent: BrowserWindow, prepare: () => void = 
     return true
   } catch (error) {
     stats.store = previous.stats; tasks.store = previous.tasks;study.store=previous.study;music.store=previous.music; replaceDiaryBackup(previous.diary)
-    settings.store = previous.settings; workStore.store = previous.work;replaceSpriteLibraryBackup(previous.spriteLibrary,previous.spriteTags)
+    settings.store = previous.settings; workStore.store = previous.work;replaceSpriteLibraryBackup(previous.spriteLibrary,previous.spriteTags,previous.spriteRemovedSeeds)
     if (swapped) rmSync(live, { recursive: true, force: true })
     if (existsSync(old)) renameSync(old, live)
     throw error

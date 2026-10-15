@@ -11,3 +11,6 @@ tests/.electron/
 tests/.electron-layout/
 tests/.runtime/
 tests/screenshots/
+
+# Local demo video (not part of the repository)
+demo/

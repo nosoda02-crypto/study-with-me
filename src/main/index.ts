@@ -51,7 +51,7 @@ import {
   setCustomSprite,
   setStaticSprite,
   resetCustomSprite,
-  addUserSprite, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, applyUserSprite, seedBundledUserSprites
+  addUserSprite, deleteUserSprite, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, applyUserSprite, seedBundledUserSprites
 } from './spriteStore'
 import {
   getEntry,
@@ -635,6 +635,15 @@ ipcMain.handle('sprites:reset', (_event, pose: Pose) => {
 ipcMain.handle('sprites:user-list', () => listUserSprites())
 ipcMain.handle('sprites:tag-list', () => listUserSpriteTags())
 ipcMain.handle('sprites:tag-set', (_event,tags:string[]) => setUserSpriteTags(tags))
+ipcMain.handle('sprites:user-delete',(_event,id:string)=>{
+  if(!deleteUserSprite(id))return false
+  // Messages bound to this sticker fall back to the random tag pool.
+  const preferences=getNotificationPreferences()
+  setNotificationPreferences({...preferences,
+    templateIcons:Object.fromEntries(Object.entries(preferences.templateIcons).map(([kind,value])=>[kind,value===id?'':value])) as typeof preferences.templateIcons,
+    customRules:preferences.customRules.map(rule=>rule.iconSpriteId===id?{...rule,iconSpriteId:undefined}:rule)})
+  return true
+})
 ipcMain.handle('sprites:user-update', (_event,id:string,patch:{name?:string;tags?:string[]}) => updateUserSprite(id,patch))
 ipcMain.handle('sprites:user-apply', (_event,id:string,target:'cat'|'notify') => {
   const sprites=applyUserSprite(id,target);if(sprites)broadcastSprites();return sprites

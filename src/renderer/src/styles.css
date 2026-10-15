@@ -1251,6 +1251,10 @@ h1,h2,h3,p {
 .user-sprite-card strong { font-size:calc(10px * var(--panel-font-scale,1)); }.user-sprite-card small { color:var(--secondary); font-size:calc(8px * var(--panel-font-scale,1)); }
 .user-sprite-actions { display:flex; flex-wrap:wrap; gap:3px; margin-top:6px; }
 .user-sprite-actions button { flex:1; min-width:45%; padding:4px 2px; border:0; border-radius:7px; color:var(--blue); background:color-mix(in srgb,var(--accent-base) 8%,transparent); font-size:calc(8px * var(--panel-font-scale,1)); }
+.user-sprite-actions button.danger { background:color-mix(in srgb,#ff453a 8%,transparent); }
+.user-sprite-delete-confirm { display:flex; align-items:center; gap:4px; margin-top:5px; padding:5px 6px; border-radius:9px; background:color-mix(in srgb,#ff453a 8%,var(--surface)); color:var(--secondary); font-size:calc(8px * var(--panel-font-scale,1)); }
+.user-sprite-delete-confirm span { flex:1; min-width:0; }
+.user-sprite-delete-confirm button { border:0; border-radius:999px; padding:3px 7px; background:var(--surface); color:var(--secondary); font-size:calc(8px * var(--panel-font-scale,1)); }
 .sprite-library-editor { margin:9px 0; padding:10px; border-radius:15px; background:var(--surface); display:grid; grid-template-columns:1fr 1fr; gap:7px; }
 .user-sprite-cell>.sprite-library-editor { margin:6px 0 0; grid-template-columns:1fr; }
 .user-sprite-cell>.sprite-library-editor>div:last-child { gap:4px; }

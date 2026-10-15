@@ -36,7 +36,8 @@ interface SpriteLibraryMeta extends Omit<UserSpriteItem,'url'> {
   character?:string
   ip?:string
 }
-const libraryStore=new Store<{items:SpriteLibraryMeta[];tags:string[]}>({name:'sprite-library',defaults:{items:[],tags:[]}})
+// removedSeeds: bundled stickers the user deleted, so first-run seeding never brings them back.
+const libraryStore=new Store<{items:SpriteLibraryMeta[];tags:string[];removedSeeds:string[]}>({name:'sprite-library',defaults:{items:[],tags:[],removedSeeds:[]}})
 function userLibraryDir():string { const dir=join(app.getPath('userData'),'sprite-library');if(!existsSync(dir))mkdirSync(dir,{recursive:true});return dir }
 const cleanLabel=(value:unknown):string=>typeof value==='string'?value.trim().slice(0,40):''
 const cleanTags=(value:unknown):string[]=>Array.isArray(value)?[...new Set(value.map(tag=>cleanLabel(typeof tag==='string'?tag.replace(/^#+/,''):tag)).filter(Boolean))].slice(0,20):[]
@@ -72,6 +73,14 @@ export function updateUserSprite(id:string,patch:Partial<Pick<UserSpriteItem,'na
   const items=libraryStore.get('items').map(item=>{if(item.id!==id)return item;const next:SpriteLibraryMeta={id:item.id,extension:item.extension,name:patch.name===undefined?item.name:cleanLabel(patch.name),tags:patch.tags===undefined?migratedTags(item):cleanTags(patch.tags)};const file=join(userLibraryDir(),`${next.id}${next.extension}`);result={id:next.id,name:next.name,tags:next.tags,url:toDataUrl(file)};return next})
   libraryStore.set('items',items);return result
 }
+/** Remove a sticker from the library. Pet/notification images already applied are copies and stay. */
+export function deleteUserSprite(id:string):boolean {
+  const items=libraryStore.get('items'),item=items.find(value=>value.id===id);if(!item)return false
+  libraryStore.set('items',items.filter(value=>value.id!==id))
+  const file=join(userLibraryDir(),`${item.id}${item.extension}`);if(existsSync(file))unlinkSync(file)
+  if(readBundledManifest().items.some(seed=>seed.id===id))libraryStore.set('removedSeeds',[...new Set([...(libraryStore.get('removedSeeds')??[]),id])])
+  return true
+}
 export function applyUserSprite(id:string,target:'cat'|'notify'='cat'):Partial<Record<Pose,string>>|null {
   const item=libraryStore.get('items').find(value=>value.id===id);if(!item)return null
   const file=join(userLibraryDir(),`${item.id}${item.extension}`)
@@ -79,11 +88,14 @@ export function applyUserSprite(id:string,target:'cat'|'notify'='cat'):Partial<R
   return target==='notify'?{notifyIcon:setCustomSprite('notifyIcon',file)}:setStaticSprite(file)
 }
 export function getSpriteLibraryBackup():SpriteLibraryBackupItem[] { return listUserSprites().map(({url,...item})=>({...item,image:url})) }
-export function replaceSpriteLibraryBackup(items:SpriteLibraryBackupItem[],tags:string[]=[]):void {
+export function getRemovedSeeds():string[] { return libraryStore.get('removedSeeds')??[] }
+export function replaceSpriteLibraryBackup(items:SpriteLibraryBackupItem[],tags:string[]=[],removedSeeds?:string[]):void {
   const dir=userLibraryDir();rmSync(dir,{recursive:true,force:true});mkdirSync(dir,{recursive:true})
   const meta:SpriteLibraryMeta[]=[]
   for(const item of items){if(!/^[a-zA-Z0-9_-]{1,80}$/.test(item.id)||meta.some(value=>value.id===item.id))continue;const match=/^data:image\/(png|jpeg|webp|gif);base64,(.*)$/.exec(item.image);if(!match)continue;const extension=match[1]==='jpeg'?'.jpg':`.${match[1]}`;writeFileSync(join(dir,`${item.id}${extension}`),Buffer.from(match[2],'base64'));meta.push({id:item.id,name:cleanLabel(item.name),tags:migratedTags(item as unknown as SpriteLibraryMeta),extension})}
   libraryStore.set('items',meta);libraryStore.set('tags',cleanTagRegistry(tags.length?tags:meta.flatMap(item=>item.tags)))
+  // Older backups don't record deleted bundled stickers; keep this machine's list then.
+  if(removedSeeds)libraryStore.set('removedSeeds',[...new Set(removedSeeds)])
 }
 
 interface BundledSticker { id:string;name:string;tags:string[];file:string }
@@ -98,7 +110,7 @@ function readBundledManifest():{items:BundledSticker[];randomIconTags:string[]}{
 }
 /** Add stickers bundled with this build once. Existing metadata and files are never overwritten. */
 export function seedBundledUserSprites():{added:number;randomIconTags:string[]}{
-  const manifest=readBundledManifest(),items=libraryStore.get('items'),existing=new Set(items.map(item=>item.id)),next=[...items];let added=0
+  const manifest=readBundledManifest(),items=libraryStore.get('items'),existing=new Set([...items.map(item=>item.id),...(libraryStore.get('removedSeeds')??[])]),next=[...items];let added=0
   for(const seed of manifest.items){
     const source=join(bundledStickerDir(),seed.file)
     if(existing.has(seed.id)||!existsSync(source))continue
