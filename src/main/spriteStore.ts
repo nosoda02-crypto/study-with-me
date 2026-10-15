@@ -81,6 +81,12 @@ export function deleteUserSprite(id:string):boolean {
   if(readBundledManifest().items.some(seed=>seed.id===id))libraryStore.set('removedSeeds',[...new Set([...(libraryStore.get('removedSeeds')??[]),id])])
   return true
 }
+/** Use a library sticker for one specific pose (e.g. only the rest image). */
+export function applyUserSpriteToPose(id:string,pose:Pose):string|null {
+  const item=libraryStore.get('items').find(value=>value.id===id);if(!item||!POSES.includes(pose))return null
+  const file=join(userLibraryDir(),`${item.id}${item.extension}`)
+  return existsSync(file)?setCustomSprite(pose,file):null
+}
 export function applyUserSprite(id:string,target:'cat'|'notify'='cat'):Partial<Record<Pose,string>>|null {
   const item=libraryStore.get('items').find(value=>value.id===id);if(!item)return null
   const file=join(userLibraryDir(),`${item.id}${item.extension}`)

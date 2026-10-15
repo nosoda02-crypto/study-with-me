@@ -51,7 +51,7 @@ import {
   setCustomSprite,
   setStaticSprite,
   resetCustomSprite,
-  addUserSprite, deleteUserSprite, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, applyUserSprite, seedBundledUserSprites
+  addUserSprite, deleteUserSprite, applyUserSpriteToPose, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, applyUserSprite, seedBundledUserSprites
 } from './spriteStore'
 import {
   getEntry,
@@ -645,6 +645,9 @@ ipcMain.handle('sprites:user-delete',(_event,id:string)=>{
   return true
 })
 ipcMain.handle('sprites:user-update', (_event,id:string,patch:{name?:string;tags?:string[]}) => updateUserSprite(id,patch))
+ipcMain.handle('sprites:user-apply-pose', (_event,id:string,pose:Pose) => {
+  const url=applyUserSpriteToPose(id,pose);if(url)broadcastSprites();return url
+})
 ipcMain.handle('sprites:user-apply', (_event,id:string,target:'cat'|'notify') => {
   const sprites=applyUserSprite(id,target);if(sprites)broadcastSprites();return sprites
 })

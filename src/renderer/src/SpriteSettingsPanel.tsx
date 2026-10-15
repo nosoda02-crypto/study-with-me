@@ -25,26 +25,45 @@ const NOTIFY_POSES: Pose[] = ['notifyIcon']
 function SpritePoseRow({
   pose,
   customUrl,
-  onPick,
+  inheritedUrl,
+  library,
+  choosing,
+  onChoose,
+  onUpload,
+  onUseLibrary,
   onReset
 }: {
   pose: Pose
   customUrl?: string
-  onPick: (pose: Pose) => void
+  /** Image actually shown when this pose has none of its own (rest falls back to the idle image). */
+  inheritedUrl?: string
+  library: UserSpriteItem[]
+  choosing: boolean
+  onChoose: (pose: Pose | null) => void
+  onUpload: (pose: Pose) => void
+  onUseLibrary: (pose: Pose, id: string) => void
   onReset: (pose: Pose) => void
 }): React.JSX.Element {
   return (
-    <div className="sprite-row">
-      <img className="sprite-preview" src={customUrl ?? DEFAULT_IMAGES[pose]} alt="" />
-      <div className="sprite-row-body">
-        <span className="sprite-row-label">{POSE_LABELS[pose]}</span>
-        <div className="sprite-row-actions">
-          <button onClick={() => onPick(pose)}>选择图片…</button>
-          <button className="ghost" disabled={!customUrl} onClick={() => onReset(pose)}>
-            恢复默认
-          </button>
+    <div className={`sprite-row-wrap${choosing ? ' choosing' : ''}`}>
+      <div className="sprite-row">
+        <img className="sprite-preview" src={customUrl ?? inheritedUrl ?? DEFAULT_IMAGES[pose]} alt="" />
+        <div className="sprite-row-body">
+          <span className="sprite-row-label">{POSE_LABELS[pose]}{!customUrl && inheritedUrl && <small className="sprite-row-note">跟随待机</small>}</span>
+          <div className="sprite-row-actions">
+            <button aria-expanded={choosing} onClick={() => onChoose(choosing ? null : pose)}>选择图片…</button>
+            <button className="ghost" disabled={!customUrl} onClick={() => onReset(pose)}>
+              恢复默认
+            </button>
+          </div>
         </div>
       </div>
+      {choosing && <div className="sprite-pose-picker" aria-label={`为「${POSE_LABELS[pose]}」选择贴图`}>
+        {library.length > 0
+          ? <div className="sprite-pose-picker-grid">{library.map(item => <button key={item.id} title={item.name} aria-label={`使用 ${item.name}`} onClick={() => onUseLibrary(pose, item.id)}><img src={item.url} alt="" /><span>{item.name}</span></button>)}</div>
+          : <p className="sprite-library-empty">贴图库还是空的</p>}
+        <div className="sprite-pose-picker-actions"><button onClick={() => onChoose(null)}>取消</button><button className="primary-button" onClick={() => onUpload(pose)}>从电脑上传…</button></div>
+      </div>}
     </div>
   )
 }
@@ -56,6 +75,7 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
   const [selectedTags,setSelectedTags]=useState<string[]>([])
   const [editing,setEditing]=useState<UserSpriteItem|null>(null)
   const [pendingDelete,setPendingDelete]=useState<string|null>(null)
+  const [choosingPose,setChoosingPose]=useState<Pose|null>(null)
   const [tagText,setTagText]=useState('')
   const [managingTags,setManagingTags]=useState(false)
   const [tagDrafts,setTagDrafts]=useState<Record<string,string|null>>({})
@@ -84,7 +104,11 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
 
   const handlePick = async (pose: Pose): Promise<void> => {
     const dataUrl = await window.api.pickSprite(pose)
-    if (dataUrl) { setSprites((prev) => ({ ...prev, [pose]: dataUrl }));await refreshLibrary() }
+    if (dataUrl) { setSprites((prev) => ({ ...prev, [pose]: dataUrl }));setChoosingPose(null);await refreshLibrary() }
+  }
+  const useLibraryForPose = async (pose: Pose, id: string): Promise<void> => {
+    const dataUrl = await window.api.applyUserSpriteToPose(id, pose)
+    if (dataUrl) { setSprites((prev) => ({ ...prev, [pose]: dataUrl }));setChoosingPose(null) }
   }
 
   const handlePickStatic = async (): Promise<void> => {
@@ -142,39 +166,21 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
         <div className="sprite-section-title">桌宠姿态</div>
         <div className="sprite-rows">
           {CAT_POSES.map((pose) => (
-            <SpritePoseRow
-              key={pose}
-              pose={pose}
-              customUrl={sprites[pose]}
-              onPick={handlePick}
-              onReset={handleReset}
-            />
+            <SpritePoseRow key={pose} pose={pose} customUrl={sprites[pose]} inheritedUrl={pose === 'sleep' ? sprites.idle : undefined} library={library} choosing={choosingPose === pose} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
           ))}
         </div>
 
         <div className="sprite-section-title">状态贴图（午休 / 开会 / 下班时显示）</div>
         <div className="sprite-rows">
           {STATE_POSES.map((pose) => (
-            <SpritePoseRow
-              key={pose}
-              pose={pose}
-              customUrl={sprites[pose]}
-              onPick={handlePick}
-              onReset={handleReset}
-            />
+            <SpritePoseRow key={pose} pose={pose} customUrl={sprites[pose]} inheritedUrl={pose === 'sleep' ? sprites.idle : undefined} library={library} choosing={choosingPose === pose} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
           ))}
         </div>
 
         <div className="sprite-section-title">通知窗</div>
         <div className="sprite-rows">
           {NOTIFY_POSES.map((pose) => (
-            <SpritePoseRow
-              key={pose}
-              pose={pose}
-              customUrl={sprites[pose]}
-              onPick={handlePick}
-              onReset={handleReset}
-            />
+            <SpritePoseRow key={pose} pose={pose} customUrl={sprites[pose]} inheritedUrl={pose === 'sleep' ? sprites.idle : undefined} library={library} choosing={choosingPose === pose} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
           ))}
         </div>
       </div>
