@@ -1664,3 +1664,4 @@ h1,h2,h3,p {
 .sprite-pose-picker-actions { display:flex; justify-content:flex-end; gap:6px; margin-top:8px; }
 .sprite-pose-picker-actions button { border:0; border-radius:999px; padding:5px 10px; font-size:calc(9px * var(--panel-font-scale,1)); }
 .sprite-pose-picker-actions button:not(.primary-button) { background:var(--surface); color:var(--secondary); }
+.sprite-row-desc { display:block; margin:-4px 0 7px; color:var(--secondary); font-size:calc(9px * var(--panel-font-scale,1)); line-height:1.35; }

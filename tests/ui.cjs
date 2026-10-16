@@ -183,7 +183,7 @@ app.whenReady().then(async()=>{
   assert.match(await detailWin.webContents.executeJavaScript('document.querySelector(".user-sprite-library").textContent'),/#新标签/)
   await capture(detailWin,'sprite-library')
   // Pose rows can take an image straight from the sticker library.
-  await detailWin.webContents.executeJavaScript(`[...document.querySelectorAll('.sprite-row-wrap')].find(w=>w.querySelector('.sprite-row-label').textContent.startsWith('休息/挂机')).querySelector('.sprite-row-actions button').click()`);await pause(80)
+  await detailWin.webContents.executeJavaScript(`[...document.querySelectorAll('.sprite-row-wrap')].find(w=>w.querySelector('.sprite-row-label').textContent.startsWith('通用默认图')).querySelector('.sprite-row-actions button').click()`);await pause(80)
   assert.equal(await detailWin.webContents.executeJavaScript('document.querySelectorAll(".sprite-pose-picker").length'),1)
   await detailWin.webContents.executeJavaScript('document.querySelector("[aria-label=\\"使用 趴趴猫\\"]").click()');await pause(120)
   assert.equal(await detailWin.webContents.executeJavaScript('document.querySelectorAll(".sprite-pose-picker").length'),0)
@@ -272,7 +272,7 @@ app.whenReady().then(async()=>{
   await capture(readmeSettings,'readme-notifications-settings');readmeSettings.destroy()
   const readmeSprites=await render('/hub-detail?detail=sprites&direction=right',320,540,['--readme-demo']);await pause(400)
   await capture(readmeSprites,'readme-sprite-library')
-  await readmeSprites.webContents.executeJavaScript(`{const row=[...document.querySelectorAll('.sprite-row-wrap')].find(w=>w.querySelector('.sprite-row-label').textContent.startsWith('休息/挂机'));row.querySelector('.sprite-row-actions button').click();setTimeout(()=>row.scrollIntoView({block:'start'}),50)}`);await pause(300)
+  await readmeSprites.webContents.executeJavaScript(`{const row=[...document.querySelectorAll('.sprite-row-wrap')].find(w=>w.querySelector('.sprite-row-label').textContent.startsWith('通用默认图'));row.querySelector('.sprite-row-actions button').click();setTimeout(()=>row.scrollIntoView({block:'start'}),50)}`);await pause(300)
   await capture(readmeSprites,'readme-pose-picker');readmeSprites.destroy()
   console.log('UI checks passed: status switch / pause / reset / diary dates / backup / single & double click. Screenshots: tests/screenshots')
   app.exit(0)

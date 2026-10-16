@@ -15,8 +15,8 @@ const DEFAULT_IMAGES: Record<Pose, string> = {
 
 const POSE_LABELS: Record<Pose, string> = {
   idle: '待机（工作中显示）',
-  sleep: '休息/挂机',
-  notifyIcon: '通知图标'
+  sleep: '通用默认图',
+  notifyIcon: '默认头像'
 }
 
 const NOTIFY_POSES: Pose[] = ['notifyIcon']
@@ -24,6 +24,7 @@ const NOTIFY_POSES: Pose[] = ['notifyIcon']
 function SpritePoseRow({
   pose,
   label,
+  description,
   defaultUrl,
   customUrl,
   inheritedUrl,
@@ -37,6 +38,8 @@ function SpritePoseRow({
 }: {
   pose: SpriteKey
   label?: string
+  /** One line under the title explaining when this image is shown. */
+  description?: string
   defaultUrl?: string
   customUrl?: string
   /** Image actually shown when this key has none of its own, and the note explaining where it comes from. */
@@ -56,6 +59,7 @@ function SpritePoseRow({
         <img className="sprite-preview" src={customUrl ?? inheritedUrl ?? defaultUrl ?? DEFAULT_IMAGES[pose as Pose]} alt="" />
         <div className="sprite-row-body">
           <span className="sprite-row-label">{title}{!customUrl && inheritedNote && <small className="sprite-row-note">{inheritedNote}</small>}</span>
+          {description && <span className="sprite-row-desc">{description}</span>}
           <div className="sprite-row-actions">
             <button aria-expanded={choosing} onClick={() => onChoose(choosing ? null : pose)}>选择图片…</button>
             <button className="ghost" disabled={!customUrl} onClick={() => onReset(pose)}>
@@ -165,11 +169,13 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
   // Focus uses the idle image; every other state can have its own image and
   // otherwise shows the rest image (which itself falls back to the idle image).
   const restUrl = sprites.sleep ?? sprites.idle
+  const usingRest = workStates.filter(state => state.id !== 'focus' && !sprites[`state-${state.id}`]).map(state => state.label)
+  const restDescription = usingRest.length ? `没单独选图的状态都显示这张，目前用于：${usingRest.join('、')}` : '所有状态都已单独选图，暂时没有状态用到这张'
   const stateRows: { key: SpriteKey; label: string; inherited?: string; note?: string; fallback: string }[] = [
     ...(workStates.some(state => state.id === 'focus') ? [] : [{ key: 'idle' as SpriteKey, label: '待机', fallback: DEFAULT_IMAGES.idle }]),
     ...workStates.map(state => state.id === 'focus'
       ? { key: 'idle' as SpriteKey, label: `${state.label}（待机图）`, fallback: DEFAULT_IMAGES.idle }
-      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: restUrl, note: '跟随休息图', fallback: DEFAULT_IMAGES.sleep })
+      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: restUrl, note: '跟随通用图', fallback: DEFAULT_IMAGES.sleep })
   ]
 
   return (
@@ -193,15 +199,15 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
           ))}
         </div>
 
-        <div className="sprite-section-title">休息图（没单独设置图的状态显示这张）</div>
+        <div className="sprite-section-title">其他状态的通用图</div>
         <div className="sprite-rows">
-          {(() => { const key: SpriteKey = 'sleep'; return <SpritePoseRow pose={key} customUrl={sprites.sleep} inheritedUrl={sprites.idle} inheritedNote="跟随待机" library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} /> })()}
+          {(() => { const key: SpriteKey = 'sleep'; return <SpritePoseRow pose={key} label="通用默认图" description={restDescription} customUrl={sprites.sleep} inheritedUrl={sprites.idle} inheritedNote="跟随待机图" library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} /> })()}
         </div>
 
-        <div className="sprite-section-title">通知窗</div>
+        <div className="sprite-section-title">消息弹窗</div>
         <div className="sprite-rows">
           {NOTIFY_POSES.map((key) => (
-            <SpritePoseRow key={key} pose={key} customUrl={sprites[key]} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
+            <SpritePoseRow key={key} pose={key} label="默认头像" description="桌宠弹出提醒时左边的小图。在「提醒与报时」里给消息单独指定了图片的，优先用那张。" customUrl={sprites[key]} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
           ))}
         </div>
       </div>
