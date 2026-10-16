@@ -2,7 +2,6 @@ import { app } from 'electron'
 import { createHash } from 'crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { todayStr } from '../shared/date'
 import Store from './cachedStore'
 
 /** What the renderer and backups see: images are always data URLs. */
@@ -107,10 +106,6 @@ export function replaceDiaryBackup(data: DiarySchema): void {
   const entries = Object.fromEntries(Object.entries(data.entries).map(([date, entry]) => [date, { text: entry.text, images: entry.images.map(toStoredImage) }]))
   store.store = { ...data, entries }
   collectGarbage(entries)
-}
-
-export function listDates(): string[] {
-  return Object.keys(store.get('entries')).sort((a, b) => (a < b ? 1 : -1))
 }
 
 export function deleteEntry(date: string): void {

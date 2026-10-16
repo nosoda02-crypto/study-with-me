@@ -30,7 +30,7 @@ export default function HubDetailPanel():React.JSX.Element{
     <aside className="hub-detail-sheet" aria-label="设置延伸面板">
       <div className="hub-split-handle" role="separator" aria-label="调整主界面与侧栏占比" aria-orientation="vertical" onPointerDown={event=>{event.currentTarget.setPointerCapture(event.pointerId);window.api.resizeHubSplit(event.screenX)}} onPointerMove={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))window.api.resizeHubSplit(event.screenX)}} onPointerUp={event=>event.currentTarget.releasePointerCapture(event.pointerId)} />
       <header className="extension-header"><button className="extension-close" aria-label="关闭侧滑设置" title="收起侧滑窗口" onPointerDown={event=>event.stopPropagation()} onClick={close}><span /></button><div><strong>{title}</strong><span>设置与数据</span></div></header>
-      <div className="extension-body">{detail==='sprites'?<SpriteSettingsPanel embedded onClose={close}/>:detail==='window'?<WindowSettingsPanel embedded onClose={close}/>:detail==='states'?<WorkStateSettingsPanel/>:<NotificationSettingsPanel/>}</div>
+      <div className="extension-body">{detail==='sprites'?<SpriteSettingsPanel/>:detail==='window'?<WindowSettingsPanel/>:detail==='states'?<WorkStateSettingsPanel/>:<NotificationSettingsPanel/>}</div>
     </aside>
   </div>
 }

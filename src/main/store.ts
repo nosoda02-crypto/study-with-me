@@ -37,21 +37,5 @@ export function addRuntimeSeconds(seconds: number): void {
   store.set('totalRuntimeSeconds', store.get('totalRuntimeSeconds') + Math.round(seconds))
 }
 
-export interface StatsSnapshot {
-  totalKeystrokes: number
-  todayKeystrokes: number
-  totalRuntimeSeconds: number
-  sessionRuntimeSeconds: number
-}
-
-export function getStats(sessionRuntimeSeconds: number): StatsSnapshot {
-  ensureTodayFresh()
-  return {
-    totalKeystrokes: store.get('totalKeystrokes'),
-    todayKeystrokes: store.get('todayKeystrokes'),
-    totalRuntimeSeconds: store.get('totalRuntimeSeconds'),
-    sessionRuntimeSeconds: Math.round(sessionRuntimeSeconds)
-  }
-}
 
 export default store

@@ -1,7 +1,7 @@
 import { getPanelPreferences } from './settingsStore'
 import { bubbleBaseHeight } from '../shared/appearance'
 import type { NoticeLocation } from '../shared/notifications'
-import { BrowserWindow, screen, nativeTheme } from 'electron'
+import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 
 const allWorkspaceOptions = { visibleOnFullScreen: true, skipTransformProcessType: true }
@@ -107,7 +107,7 @@ export function setCatBubble(win: BrowserWindow, bubbleOpen: boolean, pet = getP
   win.webContents.send('cat:layout', layout)
 }
 
-export function createCatWindow(scale: number, opacity: number): BrowserWindow {
+export function createCatWindow(scale: number): BrowserWindow {
   const size = scaledSize(scale)
 
   const catWindow = new BrowserWindow({
@@ -228,46 +228,12 @@ export function applyCatWindowLayout(catWindow: BrowserWindow, scale: number): v
   setCatBubble(catWindow, getCatLayout(catWindow).bubbleOpen, pet)
 }
 
-function createChildPanel(
-  parent: BrowserWindow,
-  hash: string,
-  options: { title: string; width: number; height: number; resizable?: boolean }
-): BrowserWindow {
-  const win = new BrowserWindow({
-    width: options.width,
-    height: options.height,
-    resizable: options.resizable ?? false,
-    minimizable: false,
-    maximizable: false,
-    title: options.title,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f5f6f9',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
-  })
-
-  positionHoverCard(win, parent)
-  keepWindowOnAllWorkspaces(win)
-  loadRendererRoute(win, hash)
-
-  return win
-}
-
 function loadRendererRoute(win: BrowserWindow, hash: string): void {
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}${hash}`)
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined)
   }
-}
-
-export function createSpriteSettingsWindow(parent: BrowserWindow): BrowserWindow {
-  return createChildPanel(parent, '#/sprites', { title: '更换贴图', width: 380, height: 700, resizable: true })
-}
-
-export function createWindowSettingsWindow(parent: BrowserWindow): BrowserWindow {
-  return createChildPanel(parent, '#/window-settings', { title: '窗口设置', width: 360, height: 565 })
 }
 
 /** Center above the pet; fall below if needed, then clamp to the display. */
@@ -395,49 +361,9 @@ export function createHubDetailWindow(hub:BrowserWindow,detail:HubDetailKind,dir
 
 /** Grow the existing hand-book window into a connected two-pane sheet. */
 export type HubExtensionDirection='left'|'right'
-const hubExtensionState=new WeakMap<BrowserWindow,{direction:HubExtensionDirection;baseWidth:number}>()
-export interface HubExtensionLayout { direction:HubExtensionDirection;baseWidth:number }
-
-/** Decide which edge has room before the renderer starts its slide animation. */
-export function getHubExtensionLayout(win:BrowserWindow,parent:BrowserWindow):HubExtensionLayout{
-  const area=screen.getDisplayMatching(getPetVisibleBounds(parent)).workArea
-  const current=win.getBounds()
-  const previous=hubExtensionState.get(win)
-  const baseWidth=previous?.baseWidth??Math.max(340,Math.min(current.width,area.width-20))
-  const baseX=previous?.direction==='left'?current.x+current.width-previous.baseWidth:current.x
-  const leftSpace=baseX-area.x,rightSpace=area.x+area.width-(baseX+baseWidth)
-  const direction:HubExtensionDirection=previous?.direction??(rightSpace>=leftSpace?'right':'left')
-  hubExtensionState.set(win,{direction,baseWidth})
-  return {direction,baseWidth}
-}
-
-export function setHubExtensionLayout(win: BrowserWindow, parent: BrowserWindow, open: boolean, animate = false): HubExtensionDirection {
-  const { panelScale } = getPanelPreferences()
-  const area = screen.getDisplayMatching(getPetVisibleBounds(parent)).workArea
-  const current=win.getBounds()
-  if(open){
-    const layout=getHubExtensionLayout(win,parent)
-    const previous=hubExtensionState.get(win)
-    const baseWidth=layout.baseWidth
-    const width=Math.min(baseWidth+Math.max(260,Math.round(320*panelScale)),area.width-20)
-    const baseX=previous?.direction==='left'?current.x+current.width-previous.baseWidth:current.x
-    const direction=layout.direction
-    const x=direction==='right'?baseX:baseX-(width-baseWidth)
-    win.setBounds({x:Math.max(area.x,Math.min(x,area.x+area.width-width)),y:current.y,width,height:current.height},animate)
-    hubExtensionState.set(win,{direction,baseWidth})
-    return direction
-  }
-  const previous=hubExtensionState.get(win)
-  const baseWidth=previous?.baseWidth??current.width
-  const x=previous?.direction==='left'?current.x+current.width-baseWidth:current.x
-  win.setBounds({x:Math.max(area.x,Math.min(x,area.x+area.width-baseWidth)),y:current.y,width:baseWidth,height:current.height},animate)
-  hubExtensionState.delete(win)
-  return previous?.direction??'right'
-}
 
 const NOTIFY_SIZE = { width: 340, height: 110 }
 function notifySize():{width:number;height:number}{const scale=getPanelPreferences().notificationScale;return{width:Math.round(NOTIFY_SIZE.width*scale),height:Math.round(NOTIFY_SIZE.height*scale)}}
-const NOTIFY_AUTO_DISMISS_MS = 6500
 
 /**
  * A custom notification card (not the OS Notification Center) that slides in
@@ -531,4 +457,3 @@ export function createNotifyWindow(parent: BrowserWindow): BrowserWindow {
   return win
 }
 
-export const NOTIFY_AUTO_DISMISS = NOTIFY_AUTO_DISMISS_MS

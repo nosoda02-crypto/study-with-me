@@ -12,7 +12,7 @@ import {
   createCatWindow,
   createStatusWindow,
   createHubWindow,
-  getCatLayout, setCatBubble,
+  getCatLayout,
   positionHoverCard,
   positionStatusWindow,
   setPetVisualBounds,
@@ -31,7 +31,7 @@ import {
 import { createTray, TrayHandle } from './tray'
 import { startInputListener, stopInputListener } from './inputListener'
 import { isStationaryClick } from '../shared/input'
-import { recordKeystroke, addRuntimeSeconds, getStats } from './store'
+import { recordKeystroke, addRuntimeSeconds } from './store'
 import { flushAllStores } from './cachedStore'
 import {
   getTheme, setTheme, ThemeMode, getAccentColor, setAccentColor, getPanelPreferences, setPanelPreference, getNotificationPreferences, setNotificationPreferences, getLastAppVersion, setLastAppVersion, getWorkStates, setWorkStates,
@@ -54,13 +54,11 @@ import {
   getAllCustomSprites,
   setCustomSprite,
   resetCustomSprite,
-  addUserSprite, deleteUserSprite, applyUserSpriteToPose, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, applyUserSprite, seedBundledUserSprites
+  addUserSprite, deleteUserSprite, applyUserSpriteToPose, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, seedBundledUserSprites
 } from './spriteStore'
 import {
   getEntry,
   saveEntry,
-  listDates,
-  deleteEntry,
   todayStr,
   DiaryEntry,
   getFont,
@@ -178,11 +176,6 @@ function broadcastSprites(): void {
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send('sprites:updated', sprites)
   }
-}
-
-function sessionRuntimeSeconds(): number {
-  captureRuntime()
-  return sessionSeconds
 }
 
 function setClickThrough(enabled: boolean): void {
@@ -445,7 +438,6 @@ function syncAppearance(): void {
     win.webContents.send('appearance:updated', getTheme())
     win.webContents.send('accent:updated', getAccentColor())
   }
-  const color = nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f5f6f9'
 }
 app.whenReady().then(() => {
   const currentVersion = app.getVersion()
@@ -462,7 +454,7 @@ app.whenReady().then(() => {
   }
   nativeTheme.themeSource = getTheme()
   nativeTheme.on('updated', syncAppearance)
-  catWindow = createCatWindow(windowScale, windowOpacity)
+  catWindow = createCatWindow(windowScale)
 
   const attemptStartKeyTracking = (): void => {
     keyTrackingActive = startInputListener({
@@ -589,10 +581,6 @@ ipcMain.on('cat:pointer-through',(event,through:boolean)=>{
   catWindow.setIgnoreMouseEvents(through,{forward:true})
 })
 
-ipcMain.handle('stats:get', () => {
-  const snapshot = getStats(sessionRuntimeSeconds())
-  return { ...snapshot, totalRuntimeSeconds: snapshot.totalRuntimeSeconds + Math.round(pendingSeconds) }
-})
 
 ipcMain.handle('startup:get',()=>getStartupEnabled())
 ipcMain.handle('startup:set',(_event,enabled:boolean)=>{if(typeof enabled!=='boolean')throw new Error('开机启动设置无效');return setStartupEnabled(enabled)})
@@ -645,11 +633,6 @@ ipcMain.handle('sprites:library-add', async (event) => {
   return item
 })
 
-ipcMain.handle('sprites:reset', (_event, pose: SpriteKey) => {
-  if (!isSpriteKey(pose)) return
-  resetCustomSprite(pose)
-  broadcastSprites()
-})
 
 ipcMain.handle('sprites:user-list', () => listUserSprites())
 ipcMain.handle('sprites:tag-list', () => listUserSpriteTags())
@@ -676,9 +659,6 @@ ipcMain.handle('sprites:unify', (_event,key:SpriteKey) => {
 ipcMain.handle('sprites:user-apply-pose', (_event,id:string,pose:SpriteKey) => {
   const url=applyUserSpriteToPose(id,pose);if(url)broadcastSprites();return url
 })
-ipcMain.handle('sprites:user-apply', (_event,id:string,target:'cat'|'notify') => {
-  const sprites=applyUserSprite(id,target);if(sprites)broadcastSprites();return sprites
-})
 
 ipcMain.handle('diary:get-today-key', () => todayStr())
 
@@ -686,9 +666,7 @@ ipcMain.handle('diary:get', (_event, date: string) => getEntry(date))
 
 ipcMain.handle('diary:save', (_event, date: string, entry: DiaryEntry) => saveEntry(date, entry))
 
-ipcMain.handle('diary:list-dates', () => listDates())
 
-ipcMain.handle('diary:delete', (_event, date: string) => deleteEntry(date))
 
 ipcMain.handle('diary:get-font', () => getFont())
 
@@ -833,9 +811,7 @@ ipcMain.on('workstate:switch', (_event, next: WorkState) => handleWorkStateSwitc
 
 ipcMain.on('notify:close', () => closeNotify())
 
-ipcMain.on('open:sprite-settings', () => openSpriteSettings())
 
-ipcMain.on('open:window-settings', () => openWindowSettings())
 
 ipcMain.handle('hub-detail:open',(event,detail:HubDetailKind)=>{
   if(!hubWindow||event.sender!==hubWindow.webContents)return

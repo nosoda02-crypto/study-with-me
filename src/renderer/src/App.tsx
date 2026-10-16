@@ -2,9 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import type { StatusWindowLayout } from '../../preload'
 import { bubbleBaseHeight, type PanelPreferences } from '../../shared/appearance'
 import CatView from './CatView'
-import SpriteSettingsPanel from './SpriteSettingsPanel'
 import HubPanel from './HubPanel'
-import WindowSettingsPanel from './WindowSettingsPanel'
 import StatusPanel from './StatusPanel'
 import NotifyPanel from './NotifyPanel'
 import HubDetailPanel from './HubDetailPanel'
@@ -37,12 +35,8 @@ function App(): React.JSX.Element {
   }, [])
   if(window.location.hash.startsWith('#/hub-detail'))return <HubDetailPanel />
   switch (window.location.hash) {
-    case '#/sprites':
-      return <SpriteSettingsPanel />
     case '#/hub':
       return <HubPanel />
-    case '#/window-settings':
-      return <WindowSettingsPanel />
     case '#/hover-card':
       return <StatusBubbleView />
     case '#/notify':

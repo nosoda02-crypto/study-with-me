@@ -8,13 +8,6 @@ import type { MusicSnapshot,MusicStatistics } from '../shared/music'
 export type { TaskItem } from '../shared/tasks'
 import { contextBridge, ipcRenderer } from 'electron'
 
-export interface StatsSnapshot {
-  totalKeystrokes: number
-  todayKeystrokes: number
-  totalRuntimeSeconds: number
-  sessionRuntimeSeconds: number
-}
-
 export type Pose =
   | 'idle'
   | 'sleep'
@@ -121,9 +114,6 @@ const api = {
   dragCat(x: number, y: number): void { ipcRenderer.send('cat:drag', { x, y }) },
   setCatVisualBounds(bounds:SpriteVisualBounds):void{ipcRenderer.send('cat:visual-bounds',bounds)},
   setCatPointerThrough(through:boolean):void{ipcRenderer.send('cat:pointer-through',through)},
-  getStats(): Promise<StatsSnapshot> {
-    return ipcRenderer.invoke('stats:get')
-  },
   closeCurrentWindow(): void {
     ipcRenderer.send('window:close-self')
   },
@@ -136,9 +126,6 @@ const api = {
   addSpriteToLibrary(): Promise<UserSpriteItem | null> {
     return ipcRenderer.invoke('sprites:library-add')
   },
-  resetSprite(pose: SpriteKey): Promise<void> {
-    return ipcRenderer.invoke('sprites:reset', pose)
-  },
   onSpritesUpdated(callback: (sprites: SpriteMap) => void): () => void {
     const listener = (_event: unknown, sprites: SpriteMap): void => callback(sprites)
     ipcRenderer.on('sprites:updated', listener)
@@ -149,7 +136,6 @@ const api = {
   setUserSpriteTags(tags:string[]):Promise<string[]> { return ipcRenderer.invoke('sprites:tag-set',tags) },
   updateUserSprite(id:string,patch:Partial<Pick<UserSpriteItem,'name'|'tags'>>):Promise<UserSpriteItem|null> { return ipcRenderer.invoke('sprites:user-update',id,patch) },
   deleteUserSprite(id:string):Promise<boolean> { return ipcRenderer.invoke('sprites:user-delete',id) },
-  applyUserSprite(id:string,target:'cat'|'notify'):Promise<SpriteMap|null> { return ipcRenderer.invoke('sprites:user-apply',id,target) },
   unifyStateSprites(key:SpriteKey):Promise<SpriteMap|null> { return ipcRenderer.invoke('sprites:unify',key) },
   resetStateSprites():Promise<SpriteMap> { return ipcRenderer.invoke('sprites:reset-states') },
   applyUserSpriteToPose(id:string,pose:SpriteKey):Promise<string|null> { return ipcRenderer.invoke('sprites:user-apply-pose',id,pose) },
@@ -163,12 +149,6 @@ const api = {
   },
   saveDiaryEntry(date: string, entry: DiaryEntry): Promise<void> {
     return ipcRenderer.invoke('diary:save', date, entry)
-  },
-  listDiaryDates(): Promise<string[]> {
-    return ipcRenderer.invoke('diary:list-dates')
-  },
-  deleteDiaryEntry(date: string): Promise<void> {
-    return ipcRenderer.invoke('diary:delete', date)
   },
   pickDiaryImage(): Promise<string | null> {
     return ipcRenderer.invoke('diary:pick-image')
@@ -255,12 +235,6 @@ const api = {
   onNotifyLayout(callback:(layout:NotifyWindowLayout)=>void):()=>void{const listener=(_event:unknown,layout:NotifyWindowLayout)=>callback(layout);ipcRenderer.on('notify:layout',listener);return()=>ipcRenderer.removeListener('notify:layout',listener)},
   closeNotify(): void {
     ipcRenderer.send('notify:close')
-  },
-  openSpriteSettingsWindow(): void {
-    ipcRenderer.send('open:sprite-settings')
-  },
-  openWindowSettingsWindow(): void {
-    ipcRenderer.send('open:window-settings')
   },
   openHubDetail(detail:'sprites'|'window'|'notifications'|'states'):Promise<void>{return ipcRenderer.invoke('hub-detail:open',detail)},
   closeHubDetail():void{ipcRenderer.send('hub-detail:close')},

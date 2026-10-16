@@ -5,10 +5,6 @@ import { studyScheduledOn, validStudyInput, type StudyData, type StudyTask, type
 
 const store=new Store<StudyData>({name:'study-checkins',defaults:{items:[]}})
 export function getStudyData():StudyData{return{items:store.get('items')??[]}}
-export function getStudyTasksForDate(date:string):StudyTask[]{
-  if(!validDate(date))throw new Error('日期无效')
-  return getStudyData().items.filter(item=>studyScheduledOn(item,date)).sort((a,b)=>(a.reminderTime??'99:99').localeCompare(b.reminderTime??'99:99')||a.createdAt-b.createdAt)
-}
 export function saveStudyTask(input:StudyTaskInput,id?:string):StudyTask{
   if(!validStudyInput(input))throw new Error('学习计划内容无效')
   const items=getStudyData().items

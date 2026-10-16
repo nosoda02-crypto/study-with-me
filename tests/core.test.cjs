@@ -79,7 +79,7 @@ test('backup round trip restores all stores and sprites; invalid import makes no
     settings.setNotificationPreferences({location:'top-right',hourlyEnabled:true,stateHourlyEnabled:true,keystrokeEnabled:true,keystrokeStep:500,customRules:[{id:'stretch',time:'15:00',message:'起来走一走',schedule:'custom',days:[1,3,5],enabled:true}]})
     const sprite = h.load('src/main/spriteStore.ts')
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64')
-    fs.writeFileSync(path.join(h.root, 'source.png'), png); sprite.setStaticSprite(path.join(h.root, 'source.png'))
+    fs.writeFileSync(path.join(h.root, 'source.png'), png); sprite.setCustomSprite('idle', path.join(h.root, 'source.png'))
     const libraryItem=sprite.addUserSprite(path.join(h.root,'source.png'));sprite.updateUserSprite(libraryItem.id,{tags:['治愈系','小猫','原创']});sprite.setUserSpriteTags(['治愈系','小猫','原创','未使用标签'])
     assert.match(sprite.getAllCustomSprites().idle, /^data:image\/png;base64,/)
     w.switchState('focus'); h.advance(90_000); w.recordSegmentKeystroke(); w.setRecordingPaused(true)
@@ -282,16 +282,10 @@ test('hub stays clear of pet after scale changes, and panel preferences are inde
   settings.setPanelPreference('singleScale',1.5);w.setCatBubble(pet,true)
   assert.equal(w.getCatLayout(pet).bubbleScale,1.5)
 })
-test('connected settings sheet resizes one hub window and notification placement follows preference',()=>{
+test('notification placement follows preference',()=>{
   const h=harness(),w=h.load('src/main/windows.ts')
   const pet={getBounds:()=>({x:1000,y:650,width:170,height:170})}
-  let panelBounds={x:0,y:0,width:400,height:540},position,animated=false
-  const panel={getBounds:()=>({...panelBounds}),setBounds:(b,a)=>{panelBounds={...panelBounds,...b};animated=a},setSize:(width,height)=>{panelBounds={...panelBounds,width,height}},setPosition:(x,y)=>{panelBounds={...panelBounds,x,y};position={x,y}}}
-  assert.equal(w.setHubExtensionLayout(panel,pet,true,true),'right');assert.equal(panelBounds.width,720);assert.equal(animated,true)
-  const b=pet.getBounds();assert.ok(panelBounds.x+panelBounds.width<=b.x||panelBounds.x>=b.x+b.width||panelBounds.y+panelBounds.height<=b.y||panelBounds.y>=b.y+b.height)
-  w.setHubExtensionLayout(panel,pet,false,true);assert.equal(panelBounds.width,400);assert.equal(animated,true)
-  panelBounds={x:1000,y:40,width:400,height:540};assert.equal(w.setHubExtensionLayout(panel,pet,true),'left');assert.equal(panelBounds.x,680)
-  w.setHubExtensionLayout(panel,pet,false);assert.equal(panelBounds.x,1000)
+  let position
   let notifyLayout
   const notice={setBounds:b=>{position={x:b.x,y:b.y,width:b.width,height:b.height}},webContents:{send:(_event,value)=>{notifyLayout=value}}}
   w.positionNotifyWindow(notice,pet,'top-right');assert.deepEqual(position,{x:1084,y:16,width:340,height:110});assert.equal(notifyLayout.placement,'none')
@@ -363,11 +357,12 @@ test('study check-ins support daily plans, date-only plans and independent compl
   const h=harness(),s=h.load('src/main/studyStore.ts')
   const daily=s.saveStudyTask({title:'背 30 个单词',schedule:'daily',startDate:'2026-09-19',targetDate:null,reminderTime:'20:00',enabled:true})
   const dated=s.saveStudyTask({title:'完成模拟卷',schedule:'date',startDate:'2026-09-19',targetDate:'2026-09-20',reminderTime:null,enabled:true})
-  assert.deepEqual(s.getStudyTasksForDate('2026-09-19').map(x=>x.title),['背 30 个单词'])
-  assert.deepEqual(s.getStudyTasksForDate('2026-09-20').map(x=>x.title),['背 30 个单词','完成模拟卷'])
   s.toggleStudyTask(daily.id,'2026-09-19')
   assert.deepEqual(s.getStudyData().items.find(x=>x.id===daily.id).completedDates,['2026-09-19'])
   assert.equal(s.getStudyData().items.find(x=>x.id===dated.id).completedDates.length,0)
+  const shared=h.load('src/shared/study.ts')
+  assert.equal(shared.studyScheduledOn(daily,'2026-09-19'),true);assert.equal(shared.studyScheduledOn(dated,'2026-09-19'),false)
+  assert.equal(shared.studyScheduledOn(daily,'2026-09-20'),true);assert.equal(shared.studyScheduledOn(dated,'2026-09-20'),true)
 })
 
 test('music listening totals are grouped into week month and year statistics',()=>{

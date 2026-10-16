@@ -93,12 +93,6 @@ export function applyUserSpriteToPose(id:string,pose:SpriteKey):string|null {
   const file=join(userLibraryDir(),`${item.id}${item.extension}`)
   return existsSync(file)?setCustomSprite(pose,file):null
 }
-export function applyUserSprite(id:string,target:'cat'|'notify'='cat'):Partial<Record<Pose,string>>|null {
-  const item=libraryStore.get('items').find(value=>value.id===id);if(!item)return null
-  const file=join(userLibraryDir(),`${item.id}${item.extension}`)
-  if(!existsSync(file))return null
-  return target==='notify'?{notifyIcon:setCustomSprite('notifyIcon',file)}:setStaticSprite(file)
-}
 export function getSpriteLibraryBackup():SpriteLibraryBackupItem[] { return listUserSprites().map(({url,...item})=>({...item,image:url})) }
 export function getRemovedSeeds():string[] { return libraryStore.get('removedSeeds')??[] }
 export function replaceSpriteLibraryBackup(items:SpriteLibraryBackupItem[],tags:string[]=[],removedSeeds?:string[]):void {
@@ -190,14 +184,6 @@ export function setCustomSprite(pose: SpriteKey, sourcePath: string): string {
   return toDataUrl(target)
 }
 
-/** "Set as pet": the focus (idle) image; states without their own image follow it. */
-export function setStaticSprite(sourcePath: string): Partial<Record<Pose, string>> {
-  const result: Partial<Record<Pose, string>> = {}
-  for (const pose of CAT_POSES) {
-    result[pose] = setCustomSprite(pose, sourcePath)
-  }
-  return result
-}
 
 const existingStateKeys = (): StateSpriteKey[] => [...new Set(readdirSync(spritesDir()).map(file => file.slice(0, -extname(file).length)).filter(key => STATE_KEY.test(key)))] as StateSpriteKey[]
 

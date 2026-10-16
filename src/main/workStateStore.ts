@@ -4,7 +4,6 @@ import { periodRange, type CheckinPeriod, type DailyWorkSummary, type WorkStatis
 
 export type WorkState = string
 export type ResetTarget = 'all' | 'companion' | 'keystrokes' | WorkState
-export const WORK_STATES: WorkState[] = ['focus', 'break', 'lunch', 'meeting', 'off']
 export interface Segment {
   state: WorkState
   startedAt: number
@@ -149,7 +148,6 @@ export function recordSegmentKeystroke(): void {
   const last = segments.at(-1)
   if (last) { last.keystrokes++; workStore.set('segments', segments) }
 }
-export function getTodayTimeline(): Segment[] { return [...ensureToday()].reverse() }
 export function getFocusSecondsToday(): number { return getWorkSnapshot().durations.focus ?? 0 }
 export function getKeystrokesToday(): number { return ensureToday().reduce((sum, s) => sum + s.keystrokes, 0) }
 export function getWorkSnapshot() {
