@@ -107,42 +107,6 @@ test('backup round trip restores all stores and sprites; invalid import makes no
   } finally { fs.rmSync(h.root, { recursive: true, force: true }) }
 })
 
-test('head bubble expands the pet window without moving the pet, closes in place, and follows scale', () => {
-  const h = harness(), w = h.load('src/main/windows.ts')
-  let bounds = { x: 1100, y: 650, width: 170, height: 170 }
-  const win = { getBounds: () => ({ ...bounds }), setBounds: b => { bounds = b }, webContents: { send: () => {} } }
-  w.setCatBubble(win, true)
-  assert.equal(bounds.height, 476)
-  assert.deepEqual(JSON.parse(JSON.stringify(w.getPetBounds(win))), { x: 1100, y: 650, width: 170, height: 170 })
-  w.applyCatWindowLayout(win, 1.5)
-  assert.equal(w.getPetBounds(win).width, 255)
-  assert.equal(w.getPetBounds(win).y + w.getPetBounds(win).height, 820)
-  w.setCatBubble(win, false)
-  assert.equal(bounds.height, 255)
-  bounds = { x: 20, y: 20, width: 170, height: 170 }
-  w.setCatBubble(win, true)
-  assert.equal(bounds.y, 20)
-  assert.equal(w.getPetBounds(win).y, 20)
-  assert.equal(w.getPetBounds(win).x, 20)
-  assert.equal(w.getCatLayout(win).bubbleBelow, true)
-})
-
-test('opening, closing and dragging a bubble never repositions the pet at screen edges', () => {
-  for (const pet of [{x:0,y:0,width:170,height:170},{x:1270,y:730,width:170,height:170},{x:0,y:500,width:170,height:170}]) {
-    const h=harness(), w=h.load('src/main/windows.ts')
-    let bounds={...pet}
-    const win={getBounds:()=>({...bounds}),setBounds:b=>{bounds=b},webContents:{send:()=>{}}}
-    w.setCatBubble(win,true)
-    assert.deepEqual(JSON.parse(JSON.stringify(w.getPetBounds(win))),pet)
-    bounds.x += 15; bounds.y += 10
-    const dragged={...pet,x:pet.x+15,y:pet.y+10}
-    w.setCatBubble(win,false)
-    assert.deepEqual(JSON.parse(JSON.stringify(w.getPetBounds(win))),dragged)
-    w.setCatBubble(win,true)
-    assert.deepEqual(JSON.parse(JSON.stringify(w.getPetBounds(win))),dragged)
-  }
-})
-
 test('outside-click bounds distinguish the status card from the rest of the screen',()=>{
   const h=harness(),w=h.load('src/main/windows.ts'),bounds={x:400,y:200,width:320,height:306}
   assert.equal(w.pointInsideBounds({x:400,y:200},bounds),true)
@@ -279,8 +243,7 @@ test('hub stays clear of pet after scale changes, and panel preferences are inde
   }
   settings.setWindowOpacity(.3);assert.equal(settings.getPanelPreferences().panelOpacity,1)
   settings.setPanelPreference('panelOpacity',.7);assert.equal(settings.getWindowOpacity(),.3)
-  settings.setPanelPreference('singleScale',1.5);w.setCatBubble(pet,true)
-  assert.equal(w.getCatLayout(pet).bubbleScale,1.5)
+  settings.setPanelPreference('singleScale',1.5);assert.equal(settings.getPanelPreferences().singleScale,1.5)
 })
 test('notification placement follows preference',()=>{
   const h=harness(),w=h.load('src/main/windows.ts')
@@ -443,4 +406,13 @@ test('the journal side panel opens 400px wide when the screen has room, narrower
   assert.equal(w.getHubDetailPlacement(hub({x:300,y:100,width:400,height:540})).bounds.width,400)
   assert.equal(w.getHubDetailPlacement(hub({x:0,y:100,width:1100,height:540})).bounds.width,340)
   assert.equal(w.getHubDetailPlacement(hub({x:0,y:100,width:1300,height:540})).bounds.width,300)
+})
+test('scaling the pet keeps its bottom-right corner where it was',()=>{
+  const h=harness(),w=h.load('src/main/windows.ts')
+  let bounds={x:1100,y:650,width:170,height:170}
+  const win={getBounds:()=>({...bounds}),setBounds:b=>{bounds=b}}
+  w.applyCatWindowLayout(win,1.5)
+  assert.deepEqual(JSON.parse(JSON.stringify(w.getPetBounds(win))),{x:1015,y:565,width:255,height:255})
+  w.applyCatWindowLayout(win,1)
+  assert.deepEqual(JSON.parse(JSON.stringify(w.getPetBounds(win))),{x:1100,y:650,width:170,height:170})
 })

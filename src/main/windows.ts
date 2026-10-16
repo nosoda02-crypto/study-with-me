@@ -31,31 +31,14 @@ function scaledSize(scale: number): { width: number; height: number } {
   return { width: Math.round(PET_SIZE.width * scale), height: Math.round(PET_SIZE.height * scale) }
 }
 
-export interface CatLayout {
-  bubbleOpen: boolean
-  petWidth: number
-  petHeight: number
-  petLeft: number
-  petTop: number
-  bubbleLeft: number
-  bubbleTop: number
-  bubbleBelow: boolean
-  tipLeft: number
-  bubbleScale: number
-}
-const catLayouts = new WeakMap<BrowserWindow, CatLayout>()
 type PetVisualBounds={x:number;y:number;width:number;height:number;anchorX:number;anchorY:number}
 const catVisualBounds=new WeakMap<BrowserWindow,PetVisualBounds>()
 export function pointInsideBounds(point:{x:number;y:number},bounds:Electron.Rectangle):boolean{
   return point.x>=bounds.x&&point.x<bounds.x+bounds.width&&point.y>=bounds.y&&point.y<bounds.y+bounds.height
 }
-export function getCatLayout(win: BrowserWindow): CatLayout {
-  return catLayouts.get(win) ?? { bubbleOpen: false, petWidth: win.getBounds().width, petHeight: win.getBounds().height, petLeft: 0, petTop: 0, bubbleLeft: 0, bubbleTop: 0, bubbleBelow: false, tipLeft: 160, bubbleScale: 1 }
-}
+/** The cat window is exactly the pet (the status bubble is its own window). */
 export function getPetBounds(win: BrowserWindow): Electron.Rectangle {
-  const bounds = win.getBounds()
-  const layout = getCatLayout(win)
-  return { x: bounds.x + layout.petLeft, y: bounds.y + layout.petTop, width: layout.petWidth, height: layout.petHeight }
+  return win.getBounds()
 }
 export function setPetVisualBounds(win:BrowserWindow,bounds:{x:number;y:number;width:number;height:number;anchorX?:number;anchorY?:number}):void{
   const pet=getPetBounds(win)
@@ -73,40 +56,6 @@ export function getPetSpeechAnchor(win:BrowserWindow):{x:number;y:number}{
   const pet=getPetBounds(win),visible=catVisualBounds.get(win)
   return visible?{x:pet.x+visible.anchorX,y:pet.y+visible.anchorY}:{x:pet.x+pet.width/2,y:pet.y}
 }
-/** The bubble is part of the pet's transparent window, not a separate popup. */
-export function setCatBubble(win: BrowserWindow, bubbleOpen: boolean, pet = getPetBounds(win)): void {
-  const area = screen.getDisplayMatching(pet).workArea
-  const { singleScale, panelFontScale } = getPanelPreferences()
-  const bubbleWidth = Math.ceil(320 * singleScale)
-  const bubbleHeight = Math.ceil(bubbleBaseHeight(panelFontScale) * singleScale)
-  const bubbleBelow = bubbleOpen && pet.y - bubbleHeight < area.y
-  const bubbleX = Math.max(area.x, Math.min(pet.x + (pet.width - bubbleWidth) / 2, area.x + area.width - bubbleWidth))
-  const bubbleY = bubbleBelow ? pet.y + pet.height : pet.y - bubbleHeight
-  // Union of the fixed pet rectangle and the independently positioned bubble.
-  // Clamping the union would move the pet whenever the bubble meets a screen edge.
-  const x = bubbleOpen ? Math.min(pet.x, bubbleX) : pet.x
-  const y = bubbleOpen ? Math.min(pet.y, bubbleY) : pet.y
-  const width = bubbleOpen ? Math.max(pet.x + pet.width, bubbleX + bubbleWidth) - x : pet.width
-  const height = bubbleOpen ? Math.max(pet.y + pet.height, bubbleY + bubbleHeight) - y : pet.height
-  const layout: CatLayout = {
-    bubbleOpen, petWidth: pet.width, petHeight: pet.height,
-    petLeft: pet.x - x, petTop: pet.y - y,
-    bubbleLeft: bubbleX - x, bubbleTop: bubbleY - y, bubbleBelow,
-    bubbleScale: singleScale,
-    tipLeft: Math.max(24, Math.min(296, (pet.x + pet.width / 2 - bubbleX) / singleScale))
-  }
-  catLayouts.set(win, layout)
-  win.setBounds({ x: Math.round(x), y: Math.round(y), width: Math.ceil(width), height: Math.ceil(height) }, false)
-  // Native window managers can adjust requested bounds; derive offsets from the
-  // actual result so the pet remains at its original desktop coordinates.
-  const actual = win.getBounds()
-  layout.petLeft = pet.x - actual.x
-  layout.petTop = pet.y - actual.y
-  layout.bubbleLeft = bubbleX - actual.x
-  layout.bubbleTop = bubbleY - actual.y
-  win.webContents.send('cat:layout', layout)
-}
-
 export function createCatWindow(scale: number): BrowserWindow {
   const size = scaledSize(scale)
 
@@ -224,8 +173,7 @@ export function positionStatusWindow(win: BrowserWindow, parent: BrowserWindow):
 export function applyCatWindowLayout(catWindow: BrowserWindow, scale: number): void {
   const size = scaledSize(scale)
   const current = getPetBounds(catWindow)
-  const pet = { x: current.x + current.width - size.width, y: current.y + current.height - size.height, ...size }
-  setCatBubble(catWindow, getCatLayout(catWindow).bubbleOpen, pet)
+  catWindow.setBounds({ x: Math.round(current.x + current.width - size.width), y: Math.round(current.y + current.height - size.height), ...size }, false)
 }
 
 function loadRendererRoute(win: BrowserWindow, hash: string): void {

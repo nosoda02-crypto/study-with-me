@@ -12,7 +12,6 @@ import {
   createCatWindow,
   createStatusWindow,
   createHubWindow,
-  getCatLayout,
   positionHoverCard,
   positionStatusWindow,
   setPetVisualBounds,
@@ -563,7 +562,6 @@ ipcMain.on('cat:click', () => {
   if (statusWindow && !statusWindow.isDestroyed() && statusWindow.isVisible()) hideHoverCard()
   else { hubWindow?.hide(); showHoverCard() }
 })
-ipcMain.handle('cat:get-layout', () => catWindow ? getCatLayout(catWindow) : null)
 ipcMain.on('cat:close-bubble', () => hideHoverCard())
 ipcMain.on('cat:double-click', () => openHub())
 ipcMain.on('cat:drag', (event, delta: { x: number; y: number }) => {

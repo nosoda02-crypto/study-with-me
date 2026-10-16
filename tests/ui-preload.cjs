@@ -25,7 +25,7 @@ let userSprites=[{id:'cat-one',name:'趴趴猫',tags:['治愈系','小猫','原�
 let userSpriteTags=['治愈系','小猫','原创','全职高手','黄少天','桌宠','消息图标','工作状态','休息状态','可爱角色','像素风格','节日限定','日常表情','加油打气','摸鱼时刻','键盘互动','鼠标互动','生日祝福','早安问候','晚安问候','专注陪伴','假日角色','黄色主题','猫咪伙伴']
 let single = 0, double = 0, drags = 0
 contextBridge.exposeInMainWorld('api', {
-  getCatLayout:async()=>({bubbleOpen:false,petWidth:170,petHeight:170,petLeft:0,petTop:0,bubbleLeft:0}),onCatLayout:f=>on('layout',f),closeCatBubble:()=>emit('layout',{bubbleOpen:false,petWidth:170,petHeight:170,petLeft:0,petTop:0,bubbleLeft:0}),
+  closeCatBubble:()=>emit('layout',{bubbleOpen:false,petWidth:170,petHeight:170,petLeft:0,petTop:0,bubbleLeft:0}),
   onStatusLayout:f=>on('status-layout',f),
   getAppearance:async()=> 'system',setAppearance:async mode=>{await ipcRenderer.invoke('test:theme',mode);emit('appearance',mode)},onAppearanceUpdated:f=>on('appearance',f),
   getAccentColor:async()=>accentColor,setAccentColor:async color=>{accentColor=color;emit('accent',color);return color},onAccentColorUpdated:f=>on('accent',f),

@@ -1,6 +1,5 @@
-import StatusPanel from './StatusPanel'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { WorkState, SpriteMap, CatLayout } from '../../preload'
+import { useEffect, useRef, useState } from 'react'
+import type { WorkState, SpriteMap } from '../../preload'
 
 const DEFAULT_IMAGES = Object.fromEntries(['idle', 'sleep'].map(k => [k, `./cat/${k}.svg`]))
 type AlphaMap={width:number;height:number;alpha:Uint8ClampedArray;minX:number;minY:number;maxX:number;maxY:number;topX:number}
@@ -22,7 +21,6 @@ function opaqueAt(img:HTMLImageElement,x:number,y:number):boolean{const box=imag
 
 export default function CatView(): React.JSX.Element {
   const [dragging, setDragging] = useState(false)
-  const [layout, setLayout] = useState<CatLayout | null>(null)
   const [sprites, setSprites] = useState<SpriteMap>({})
   // Unknown during a renderer wake/reload: never flash the focus pose before
   // the persisted selection arrives from the main process.
@@ -34,20 +32,20 @@ export default function CatView(): React.JSX.Element {
   const reportCatShape=()=>{const img=catRef.current,stage=stageRef.current;if(!img||!stage||!img.complete)return;const map=alphaMaps.get(img)??readAlpha(img);if(!map)return;const box=imageContentBox(img),root=stage.getBoundingClientRect(),localLeft=box.left-root.left,localTop=box.top-root.top;window.api.setCatVisualBounds({x:localLeft+map.minX/map.width*box.width,y:localTop+map.minY/map.height*box.height,width:(map.maxX-map.minX+1)/map.width*box.width,height:(map.maxY-map.minY+1)/map.height*box.height,anchorX:localLeft+map.topX/map.width*box.width,anchorY:localTop+map.minY/map.height*box.height})}
 
   useEffect(() => {
-    window.api.getCatLayout().then(setLayout)
     window.api.getSprites().then(setSprites)
     window.api.getWorkState().then(s => setState(s.state))
-    const off = [window.api.onCatLayout(setLayout), window.api.onSpritesUpdated(setSprites), window.api.onWorkStateUpdated(setState)]
+    const off = [window.api.onSpritesUpdated(setSprites), window.api.onWorkStateUpdated(setState)]
     return () => { off.forEach(f => f()); clearTimeout(clickTimer.current) }
   }, [])
-  useEffect(()=>{const frame=requestAnimationFrame(reportCatShape);return()=>cancelAnimationFrame(frame)},[layout?.petWidth,layout?.petHeight,state,sprites])
+  useEffect(()=>{const frame=requestAnimationFrame(reportCatShape);return()=>cancelAnimationFrame(frame)},[state,sprites])
+  // Pet scale changes resize the window: re-measure the visible outline.
+  useEffect(()=>{const onResize=()=>requestAnimationFrame(reportCatShape);window.addEventListener('resize',onResize);return()=>window.removeEventListener('resize',onResize)},[])
   // A state's own image wins; otherwise every state follows the focus (idle)
   // image. With no custom images at all, non-focus states show the sleeping cat.
   const petImage = (current: WorkState | null): string => (current && sprites[`state-${current}`]) ||
     sprites.idle || (current === 'focus' ? DEFAULT_IMAGES.idle : DEFAULT_IMAGES.sleep)
-  return <>
-    {layout?.bubbleOpen && <div className={`pet-bubble-anchor${layout.bubbleBelow ? ' pet-bubble-anchor--below' : ''}`} style={{ left: layout.bubbleLeft, top: layout.bubbleTop ?? 0, transform: `scale(${layout.bubbleScale ?? 1})`, transformOrigin: 'top left', '--bubble-tip-left': `${layout.tipLeft ?? 160}px` } as CSSProperties}><StatusPanel /></div>}
-    <div ref={stageRef} style={layout ? { position: 'absolute', left: layout.petLeft, top: layout.petTop, width: layout.petWidth, height: layout.petHeight } : undefined} className={`scene-stage${dragging ? ' scene-stage--dragging' : ''}`}
+  return (
+    <div ref={stageRef} className={`scene-stage${dragging ? ' scene-stage--dragging' : ''}`}
     title="左右键单击查看状态 · 左键双击打开手帐 · 拖动移动"
     onContextMenu={e => e.preventDefault()}
     onPointerDown={e => {
@@ -85,5 +83,6 @@ export default function CatView(): React.JSX.Element {
       }, 320)
     }}>
     <img ref={catRef} className="cat-sprite" src={petImage(state)} decoding="sync" draggable={false} alt="桌宠" onLoad={e=>{readAlpha(e.currentTarget);requestAnimationFrame(reportCatShape)}} />
-  </div></>
+  </div>
+  )
 }

@@ -53,18 +53,6 @@ export interface DiaryEntry {
 export interface UserSpriteItem { id:string;name:string;tags:string[];url:string }
 
 export type ThemeMode = 'system' | 'light' | 'dark'
-export interface CatLayout {
-  bubbleOpen: boolean
-  petWidth: number
-  petHeight: number
-  petLeft: number
-  petTop: number
-  bubbleLeft: number
-  bubbleTop: number
-  bubbleBelow: boolean
-  tipLeft: number
-  bubbleScale: number
-}
 export interface StatusWindowLayout {
   bubbleBelow: boolean
   placement: 'above' | 'below' | 'left' | 'right'
@@ -74,13 +62,7 @@ export interface StatusWindowLayout {
 }
 export interface SpriteVisualBounds { x:number;y:number;width:number;height:number;anchorX?:number;anchorY?:number }
 const api = {
-  getCatLayout(): Promise<CatLayout | null> { return ipcRenderer.invoke('cat:get-layout') },
   closeCatBubble(): void { ipcRenderer.send('cat:close-bubble') },
-  onCatLayout(callback: (layout: CatLayout) => void): () => void {
-    const listener = (_event: unknown, layout: CatLayout): void => callback(layout)
-    ipcRenderer.on('cat:layout', listener)
-    return () => ipcRenderer.removeListener('cat:layout', listener)
-  },
   onStatusLayout(callback: (layout: StatusWindowLayout) => void): () => void {
     const listener = (_event: unknown, layout: StatusWindowLayout): void => callback(layout)
     ipcRenderer.on('status:layout', listener)

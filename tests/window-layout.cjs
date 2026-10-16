@@ -11,15 +11,6 @@ const w = mod.exports
 app.whenReady().then(async () => {
  const a = screen.getPrimaryDisplay().workArea
  const win = new BrowserWindow({width:170,height:170,show:false,frame:false,transparent:true,resizable:false,movable:true})
- for(const [x,y] of [[a.x+250,a.y+350],[a.x+20,a.y+20],[a.x+a.width-170,a.y+a.height-170]]) {
-   win.setBounds({x,y,width:170,height:170})
-   const before = w.getPetBounds(win)
-   w.setCatBubble(win,true)
-   assert.deepEqual(w.getPetBounds(win),before)
-   console.log('Pet position preserved:',before.x,before.y)
-   w.setCatBubble(win,false)
-   assert.deepEqual(w.getPetBounds(win),before)
- }
  const panel=new BrowserWindow({width:400,height:540,show:false,frame:false})
  win.setBounds({x:a.x+a.width-190,y:a.y+a.height-190,width:170,height:170})
  for(const scale of [.5,1,1.5,2,1]) {

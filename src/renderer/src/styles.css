@@ -1107,7 +1107,7 @@ h1,h2,h3,p {
   flex-shrink:0;
 }
 /* A small speech bubble within the pet window; the tip points at its head. */
-.pet-bubble-anchor { position:absolute; top:0; width:320px; height:306px; padding:6px 6px 14px; }
+
 .pet-bubble-window { width:320px; height:var(--bubble-height, 306px); padding:6px 6px 14px; transform:scale(var(--panel-scale,1)); transform-origin:top left; }
 .pet-bubble-window--below { padding-top:14px; padding-bottom:6px; }
 .pet-bubble-window--below .pet-bubble::after { top:-7px; bottom:auto; transform:rotate(225deg); }
@@ -1147,12 +1147,6 @@ h1,h2,h3,p {
   .pet-bubble::after { background:#27292e; border-color:#ffffff19; }
 }
 
-.pet-bubble-anchor--below { padding-top:14px; padding-bottom:6px; }
-.pet-bubble-anchor--below .pet-bubble::after {
-  top:-7px;
-  bottom:auto;
-  transform:rotate(225deg);
-}
 /* Reminders: colored lists, calendar navigation and dated agenda. */
 .reminders-view { flex:1; min-height:0; overflow-y:auto; padding:16px 20px 22px; }
 .reminders-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -1203,7 +1197,7 @@ h1,h2,h3,p {
 .list-palette,.list-icons { display:flex; gap:8px; margin-top:10px; }.list-palette button { width:23px; height:23px; border:0; border-radius:50%; color:#fff; padding:0; }.list-icons button { flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:5px 0; background:transparent; color:var(--secondary); }.list-icons button[aria-pressed=true] { color:var(--blue); border-color:var(--blue); }
 
 .cat-sprite { opacity:var(--pet-opacity,1); }
-.pet-bubble-anchor { opacity:var(--panel-opacity,1); }
+
 .settings-section { font-size:11px; color:var(--secondary); margin:0; font-weight:500; }
 .window-settings-panel { gap:13px; }
 .window-settings-panel > * { flex-shrink:0; }
