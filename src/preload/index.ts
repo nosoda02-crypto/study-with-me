@@ -133,8 +133,8 @@ const api = {
   pickSprite(pose: SpriteKey): Promise<string | null> {
     return ipcRenderer.invoke('sprites:pick', pose)
   },
-  pickStaticSprite(): Promise<SpriteMap | null> {
-    return ipcRenderer.invoke('sprites:pickStatic')
+  addSpriteToLibrary(): Promise<UserSpriteItem | null> {
+    return ipcRenderer.invoke('sprites:library-add')
   },
   resetSprite(pose: SpriteKey): Promise<void> {
     return ipcRenderer.invoke('sprites:reset', pose)

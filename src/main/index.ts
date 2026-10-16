@@ -53,7 +53,6 @@ import {
   resetStateSprites,
   getAllCustomSprites,
   setCustomSprite,
-  setStaticSprite,
   resetCustomSprite,
   addUserSprite, deleteUserSprite, applyUserSpriteToPose, listUserSprites, listUserSpriteMeta, getUserSpriteUrl, listUserSpriteTags, setUserSpriteTags, updateUserSprite, applyUserSprite, seedBundledUserSprites
 } from './spriteStore'
@@ -621,14 +620,13 @@ ipcMain.handle('sprites:pick', async (event, pose: SpriteKey) => {
   return dataUrl
 })
 
-ipcMain.handle('sprites:pickStatic', async (event) => {
+// Only adds to the library; which image each state uses is chosen separately.
+ipcMain.handle('sprites:library-add', async (event) => {
   const filePath = await pickImageFile(BrowserWindow.fromWebContents(event.sender))
   if (!filePath) return null
-
-  const sprites = setStaticSprite(filePath)
-  addUserSprite(filePath)
+  const item = addUserSprite(filePath)
   broadcastSprites()
-  return sprites
+  return item
 })
 
 ipcMain.handle('sprites:reset', (_event, pose: SpriteKey) => {
