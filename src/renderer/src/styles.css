@@ -1689,4 +1689,17 @@ h1,h2,h3,p {
 .state-sprite-strip .state-sprite-upload span { font-size:calc(8px * var(--panel-font-scale,1)); margin-top:2px; }
 .state-sprite-row .sprite-unify-confirm { border-radius:10px; }
 .user-sprite-library { margin-top:14px; }
+/* 状态管理: pet image on the left of each state card, picker below it. */
+.work-state-editor { flex-wrap:wrap; }
+.state-image-tile { flex:none; width:58px; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px; border:1.5px solid transparent; border-radius:13px; background:color-mix(in srgb,var(--state-color) 9%,transparent); color:var(--blue); }
+.state-image-tile img { width:48px; height:60px; object-fit:contain; }
+.state-image-tile span { font-size:calc(8px * var(--panel-font-scale,1)); }
+.state-image-tile.active, .state-image-tile:hover { border-color:color-mix(in srgb,var(--state-color) 60%,transparent); }
+.state-image-picker { flex-basis:100%; margin-top:4px; padding:8px 0 0; background:transparent; border-top:1px solid var(--line); border-radius:0; }
+.state-image-picker .sprite-pose-picker-grid button.selected { border-color:var(--accent-base); background:color-mix(in srgb,var(--accent-base) 12%,transparent); }
+.state-image-picker .sprite-unify-confirm { margin-top:8px; border-radius:10px; }
+.state-images-heading { display:flex; align-items:center; justify-content:space-between; margin:14px 2px 8px; }
+.state-images-heading strong { font-size:calc(11px * var(--panel-font-scale,1)); color:var(--secondary); font-weight:600; }
+.state-images-heading .text-button:disabled { opacity:.4; }
+.state-images-confirm { margin-bottom:8px; border-radius:12px; }
 

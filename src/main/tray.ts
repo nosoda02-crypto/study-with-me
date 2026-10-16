@@ -49,7 +49,7 @@ export function createTray(callbacks: TrayCallbacks): TrayHandle {
       { type: 'separator' },
       { label: '当前状态与计时', click: () => callbacks.openStatus() },
       { label: '陪伴手帐（任务 / 日记 / 备份）', click: () => callbacks.openHub() },
-      { label: '更换贴图', click: () => callbacks.openSpriteSettings() },
+      { label: '贴图库', click: () => callbacks.openSpriteSettings() },
       { label: '窗口设置', click: () => callbacks.openWindowSettings() },
       ...(callbacks.isKeyTrackingActive()
         ? []

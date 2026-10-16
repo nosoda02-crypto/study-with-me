@@ -25,7 +25,7 @@ export default function HubDetailPanel():React.JSX.Element{
     const off=window.api.onHubDetailChanged(next=>{if(closeTimer.current!==null)window.clearTimeout(closeTimer.current);closeTimer.current=null;setDetail(next);setPhase('open')})
     return()=>{if(closeTimer.current!==null)window.clearTimeout(closeTimer.current);offReveal();offClose();off()}
   },[])
-  const title=detail==='sprites'?'桌宠与贴图':detail==='window'?'大小与透明度':detail==='states'?'状态管理':'提醒与报时'
+  const title=detail==='sprites'?'贴图库':detail==='window'?'大小与透明度':detail==='states'?'状态管理':'提醒与报时'
   return <div className={`hub-detail-window hub-detail-window--${direction} hub-detail-window--${phase}`}>
     <aside className="hub-detail-sheet" aria-label="设置延伸面板">
       <div className="hub-split-handle" role="separator" aria-label="调整主界面与侧栏占比" aria-orientation="vertical" onPointerDown={event=>{event.currentTarget.setPointerCapture(event.pointerId);window.api.resizeHubSplit(event.screenX)}} onPointerMove={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))window.api.resizeHubSplit(event.screenX)}} onPointerUp={event=>event.currentTarget.releasePointerCapture(event.pointerId)} />
