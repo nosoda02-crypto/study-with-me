@@ -208,6 +208,11 @@ app.whenReady().then(async()=>{
   await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-unify-confirm .primary-button").click()');await pause(150)
   assert.equal(await detailWin.webContents.executeJavaScript('window.api.getSprites().then(s=>!!s.idle&&!Object.keys(s).some(k=>k.startsWith("state-")))'),true)
   assert.equal(await detailWin.webContents.executeJavaScript('[...document.querySelectorAll(".sprite-section-title")].some(e=>/通用|消息弹窗/.test(e.textContent))'),false)
+  // Rows have no per-row reset; the section's 恢复默认 resets every state after confirming.
+  assert.equal(await detailWin.webContents.executeJavaScript('[...document.querySelectorAll(".sprite-row-actions button")].some(b=>b.textContent.includes("恢复默认"))'),false)
+  await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-state-heading .text-button").click()');await pause(80)
+  await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-reset-confirm .primary-button").click()');await pause(150)
+  assert.equal(await detailWin.webContents.executeJavaScript('window.api.getSprites().then(s=>!s.idle&&!Object.keys(s).some(k=>k.startsWith("state-")))'),true)
   await detailWin.webContents.executeJavaScript('document.querySelector("[aria-label=\\"删除贴图 趴趴猫\\"]").click()');await pause(50)
   assert.equal(await detailWin.webContents.executeJavaScript('document.querySelectorAll(".user-sprite-delete-confirm").length'),1)
   await detailWin.webContents.executeJavaScript('document.querySelector(".user-sprite-delete-confirm .danger").click()');await pause(150)

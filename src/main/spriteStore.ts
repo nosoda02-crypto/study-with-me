@@ -220,6 +220,12 @@ export function unifyStateSprites(key: SpriteKey): Partial<Record<SpriteKey, str
   return getAllCustomSprites()
 }
 
+/** Back to the bundled pet: the focus image and every per-state image are removed. */
+export function resetStateSprites(): Partial<Record<SpriteKey, string>> {
+  for (const key of ['idle', ...existingStateKeys()] as SpriteKey[]) resetCustomSprite(key)
+  return getAllCustomSprites()
+}
+
 export function resetCustomSprite(pose: SpriteKey): void {
   const dir = spritesDir()
   for (const ext of CANDIDATE_EXTENSIONS) {

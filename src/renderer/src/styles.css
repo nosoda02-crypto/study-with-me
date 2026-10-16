@@ -1672,4 +1672,6 @@ h1,h2,h3,p {
 .notice-icon-card { display:flex; flex-direction:column; gap:8px; }
 .notice-icon-mode { margin:0; }
 .notice-icon-picker { border-radius:12px; border-top:0; }
+.sprite-state-heading .text-button:disabled { opacity:.4; }
+.sprite-reset-confirm { border-radius:12px; margin-bottom:6px; }
 

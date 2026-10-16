@@ -32,7 +32,6 @@ function SpritePoseRow({
   onChoose,
   onUpload,
   onUseLibrary,
-  onReset,
   onUnify
 }: {
   pose: SpriteKey
@@ -48,7 +47,6 @@ function SpritePoseRow({
   onChoose: (pose: SpriteKey | null) => void
   onUpload: (pose: SpriteKey) => void
   onUseLibrary: (pose: SpriteKey, id: string) => void
-  onReset: (pose: SpriteKey) => void
   /** Give every state this row's current image. */
   onUnify?: (pose: SpriteKey) => void
 }): React.JSX.Element {
@@ -63,9 +61,6 @@ function SpritePoseRow({
           {description && <span className="sprite-row-desc">{description}</span>}
           <div className="sprite-row-actions">
             <button aria-expanded={choosing} onClick={() => onChoose(choosing ? null : pose)}>选择图片…</button>
-            <button className="ghost" disabled={!customUrl} onClick={() => onReset(pose)}>
-              恢复默认
-            </button>
             {onUnify && <button className="ghost" aria-label={`所有状态都用「${title}」的图`} onClick={() => setConfirmUnify(true)}>全部统一</button>}
           </div>
         </div>
@@ -158,14 +153,8 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
     await refreshLibrary();setManagingTags(false)
   }
 
-  const handleReset = async (pose: SpriteKey): Promise<void> => {
-    await window.api.resetSprite(pose)
-    setSprites((prev) => {
-      const next = { ...prev }
-      delete next[pose]
-      return next
-    })
-  }
+  const [confirmReset, setConfirmReset] = useState(false)
+  const resetAll = async (): Promise<void> => { setConfirmReset(false); setSprites(await window.api.resetStateSprites()) }
 
   const spriteEditor=editing&&<div className="sprite-library-editor" aria-label="贴图标签编辑器"><strong>整理「{editing.name}」</strong><label>名称<input value={editing.name} placeholder="贴图名称" onChange={e=>setEditing({...editing,name:e.target.value})}/></label><label>自定义标签<input aria-label="贴图标签" value={tagText} placeholder="#全职高手 #黄少天" onChange={e=>setTagText(e.target.value)}/></label>{tags.length>0&&<div className="sprite-tag-suggestions" aria-label="选择已有标签">{tags.map(tag=><button key={tag} type="button" aria-pressed={parseTags(tagText).includes(tag)} className={parseTags(tagText).includes(tag)?'selected':''} onClick={()=>toggleEditorTag(tag)}>#{tag}</button>)}</div>}<small>可直接点选已有标签，也可以输入新标签；用空格、逗号或 # 分隔。</small><div><button onClick={()=>setEditing(null)}>取消</button><button className="primary-button" onClick={async()=>{const updated=await window.api.updateUserSprite(editing.id,{name:editing.name,tags:parseTags(tagText)});if(updated)await refreshLibrary();setEditing(null)}}>保存标签</button></div></div>
 
@@ -197,10 +186,11 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
           新图片会收藏到贴图库，并设为「{focusLabel}」的图；没单独选图的状态也会跟着用
         </span>
       </div>
-        <div className="sprite-section-title">状态贴图（每个状态可以用不同的图，没单独选的跟随「{focusLabel}」）</div>
+        <div className="sprite-library-heading sprite-state-heading"><div className="sprite-section-title">状态贴图</div><button className="text-button" disabled={!stateRows.some(row => sprites[row.key])} onClick={() => setConfirmReset(true)}>恢复默认</button></div>
+        {confirmReset && <div className="sprite-unify-confirm sprite-reset-confirm" role="group" aria-label="确认恢复默认贴图"><span>所有状态都恢复成默认的猫？贴图库里的图不受影响。</span><button onClick={() => setConfirmReset(false)}>取消</button><button className="primary-button" onClick={() => void resetAll()}>恢复</button></div>}
         <div className="sprite-rows">
           {stateRows.map(({ key, label, inherited, fallback }) => (
-            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} onUnify={unify} />
+            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onUnify={unify} />
           ))}
         </div>
 

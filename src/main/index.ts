@@ -50,6 +50,7 @@ import {
   stateSpriteKey,
   migrateRestSprite,
   unifyStateSprites,
+  resetStateSprites,
   getAllCustomSprites,
   setCustomSprite,
   setStaticSprite,
@@ -651,6 +652,9 @@ ipcMain.handle('sprites:user-delete',(_event,id:string)=>{
   return true
 })
 ipcMain.handle('sprites:user-update', (_event,id:string,patch:{name?:string;tags?:string[]}) => updateUserSprite(id,patch))
+ipcMain.handle('sprites:reset-states', () => {
+  const sprites=resetStateSprites();broadcastSprites();return sprites
+})
 ipcMain.handle('sprites:unify', (_event,key:SpriteKey) => {
   if(!isSpriteKey(key))return null
   const sprites=unifyStateSprites(key);broadcastSprites();return sprites
