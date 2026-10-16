@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import Store from './cachedStore'
 import { randomUUID } from 'crypto'
-import { existsSync, mkdirSync, copyFileSync, readFileSync, unlinkSync, rmSync, writeFileSync, statSync } from 'fs'
+import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, unlinkSync, rmSync, writeFileSync, statSync } from 'fs'
 import { join, extname, basename } from 'path'
 
 export type Pose =
@@ -16,6 +16,12 @@ export const STATE_POSES: Pose[] = ['sleep']
 // The small badge icon shown in the custom notification window.
 export const NOTIFY_POSES: Pose[] = ['notifyIcon']
 export const POSES: Pose[] = [...CAT_POSES, ...STATE_POSES, ...NOTIFY_POSES]
+// Per-work-state images: `state-<work state id>` (ids never change when a state is renamed).
+export type StateSpriteKey = `state-${string}`
+export type SpriteKey = Pose | StateSpriteKey
+const STATE_KEY = /^state-[a-z0-9_-]{1,40}$/
+export const isSpriteKey = (value: unknown): value is SpriteKey => typeof value === 'string' && (POSES.includes(value as Pose) || STATE_KEY.test(value))
+export const stateSpriteKey = (stateId: string): StateSpriteKey => `state-${stateId}`
 
 const CANDIDATE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
 
@@ -82,8 +88,8 @@ export function deleteUserSprite(id:string):boolean {
   return true
 }
 /** Use a library sticker for one specific pose (e.g. only the rest image). */
-export function applyUserSpriteToPose(id:string,pose:Pose):string|null {
-  const item=libraryStore.get('items').find(value=>value.id===id);if(!item||!POSES.includes(pose))return null
+export function applyUserSpriteToPose(id:string,pose:SpriteKey):string|null {
+  const item=libraryStore.get('items').find(value=>value.id===id);if(!item||!isSpriteKey(pose))return null
   const file=join(userLibraryDir(),`${item.id}${item.extension}`)
   return existsSync(file)?setCustomSprite(pose,file):null
 }
@@ -133,7 +139,7 @@ function spritesDir(): string {
   return dir
 }
 
-function findCustomFile(pose: Pose): string | null {
+function findCustomFile(pose: SpriteKey): string | null {
   const dir = spritesDir()
   for (const ext of CANDIDATE_EXTENSIONS) {
     const candidate = join(dir, `${pose}${ext}`)
@@ -151,7 +157,7 @@ function toDataUrl(filePath: string): string {
 
 // Pose images are re-sent to every window on each change; re-encode only when the file changes.
 const poseUrlCache = new Map<string, { version: string; url: string }>()
-export function getCustomSpriteUrl(pose: Pose): string | null {
+export function getCustomSpriteUrl(pose: SpriteKey): string | null {
   const file = findCustomFile(pose)
   if (!file) { poseUrlCache.delete(pose); return null }
   const { mtimeMs, size } = statSync(file), version = `${file}:${mtimeMs}:${size}`, cached = poseUrlCache.get(pose)
@@ -161,16 +167,17 @@ export function getCustomSpriteUrl(pose: Pose): string | null {
   return url
 }
 
-export function getAllCustomSprites(): Partial<Record<Pose, string>> {
-  const result: Partial<Record<Pose, string>> = {}
-  for (const pose of POSES) {
+export function getAllCustomSprites(): Partial<Record<SpriteKey, string>> {
+  const result: Partial<Record<SpriteKey, string>> = {}
+  const stateKeys = readdirSync(spritesDir()).map(file => file.slice(0, -extname(file).length)).filter(key => STATE_KEY.test(key)) as StateSpriteKey[]
+  for (const pose of [...POSES, ...new Set(stateKeys)]) {
     const url = getCustomSpriteUrl(pose)
     if (url) result[pose] = url
   }
   return result
 }
 
-export function setCustomSprite(pose: Pose, sourcePath: string): string {
+export function setCustomSprite(pose: SpriteKey, sourcePath: string): string {
   const dir = spritesDir()
   for (const ext of CANDIDATE_EXTENSIONS) {
     const existing = join(dir, `${pose}${ext}`)
@@ -192,7 +199,7 @@ export function setStaticSprite(sourcePath: string): Partial<Record<Pose, string
   return result
 }
 
-export function resetCustomSprite(pose: Pose): void {
+export function resetCustomSprite(pose: SpriteKey): void {
   const dir = spritesDir()
   for (const ext of CANDIDATE_EXTENSIONS) {
     const existing = join(dir, `${pose}${ext}`)

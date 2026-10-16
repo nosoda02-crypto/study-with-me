@@ -19,7 +19,10 @@ export type Pose =
   | 'idle'
   | 'sleep'
   | 'notifyIcon'
-export type SpriteMap = Partial<Record<Pose, string>>
+/** `state-<work state id>`: an image used only while that work state is active. */
+export type StateSpriteKey = `state-${string}`
+export type SpriteKey = Pose | StateSpriteKey
+export type SpriteMap = Partial<Record<SpriteKey, string>>
 
 export type WorkState = string
 
@@ -127,13 +130,13 @@ const api = {
   getSprites(): Promise<SpriteMap> {
     return ipcRenderer.invoke('sprites:get')
   },
-  pickSprite(pose: Pose): Promise<string | null> {
+  pickSprite(pose: SpriteKey): Promise<string | null> {
     return ipcRenderer.invoke('sprites:pick', pose)
   },
   pickStaticSprite(): Promise<SpriteMap | null> {
     return ipcRenderer.invoke('sprites:pickStatic')
   },
-  resetSprite(pose: Pose): Promise<void> {
+  resetSprite(pose: SpriteKey): Promise<void> {
     return ipcRenderer.invoke('sprites:reset', pose)
   },
   onSpritesUpdated(callback: (sprites: SpriteMap) => void): () => void {
@@ -147,7 +150,7 @@ const api = {
   updateUserSprite(id:string,patch:Partial<Pick<UserSpriteItem,'name'|'tags'>>):Promise<UserSpriteItem|null> { return ipcRenderer.invoke('sprites:user-update',id,patch) },
   deleteUserSprite(id:string):Promise<boolean> { return ipcRenderer.invoke('sprites:user-delete',id) },
   applyUserSprite(id:string,target:'cat'|'notify'):Promise<SpriteMap|null> { return ipcRenderer.invoke('sprites:user-apply',id,target) },
-  applyUserSpriteToPose(id:string,pose:Pose):Promise<string|null> { return ipcRenderer.invoke('sprites:user-apply-pose',id,pose) },
+  applyUserSpriteToPose(id:string,pose:SpriteKey):Promise<string|null> { return ipcRenderer.invoke('sprites:user-apply-pose',id,pose) },
   getStartupEnabled():Promise<boolean>{return ipcRenderer.invoke('startup:get')},
   setStartupEnabled(enabled:boolean):Promise<boolean>{return ipcRenderer.invoke('startup:set',enabled)},
   getTodayKey(): Promise<string> {

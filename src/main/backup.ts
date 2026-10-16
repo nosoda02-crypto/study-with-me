@@ -10,7 +10,7 @@ import tasks, { getTaskData } from './tasksStore'
 import { getDiaryBackup, replaceDiaryBackup } from './diaryStore'
 import settings from './settingsStore'
 import { workStore, checkpointWorkState, reloadWorkState, type WorkStateSchema } from './workStateStore'
-import { getAllCustomSprites, getSpriteLibraryBackup, getRemovedSeeds, listUserSpriteTags, replaceSpriteLibraryBackup, POSES } from './spriteStore'
+import { getAllCustomSprites, getSpriteLibraryBackup, getRemovedSeeds, listUserSpriteTags, replaceSpriteLibraryBackup, isSpriteKey } from './spriteStore'
 import study,{getStudyData} from './studyStore'
 import { validStudyInput } from '../shared/study'
 import music,{flushMusic} from './musicStore'
@@ -87,7 +87,7 @@ export function validateBackup(v: unknown): asserts v is Backup {
     (w.timeOffsets !== undefined && (!object(w.timeOffsets) || !Object.entries(w.timeOffsets).every(([key, value]) => state(key) && signedNumber(value)))) ||
     (w.historyResets !== undefined && (!object(w.historyResets) || !Object.entries(w.historyResets).every(([key, reset]) => date(key) && object(reset) && signedNumber(reset.companionOffset) && object(reset.timeOffsets) && Object.entries(reset.timeOffsets).every(([s, n]) => state(s) && signedNumber(n))))) ||
     !state(w.state) || typeof w.paused !== 'boolean' || (w.startedToday!==undefined&&typeof w.startedToday!=='boolean') || !number(w.checkpoint) ||
-    !Object.entries(p).every(([k, x]) => (POSES.includes(k as any) || LEGACY_POSES.includes(k)) && image(x)) ||
+    !Object.entries(p).every(([k, x]) => (isSpriteKey(k) || LEGACY_POSES.includes(k)) && image(x)) ||
     (spriteLibrary!==undefined&&(!Array.isArray(spriteLibrary)||!spriteLibrary.every(x=>object(x)&&typeof x.id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(x.id)&&typeof x.name==='string'&&x.name.length<=40&&((Array.isArray(x.tags)&&x.tags.length<=20&&x.tags.every((tag:any)=>typeof tag==='string'&&tag.length<=40))||(typeof x.folder==='string'&&x.folder.length<=40&&typeof x.character==='string'&&x.character.length<=40&&typeof x.ip==='string'&&x.ip.length<=40))&&image(x.image))||new Set(spriteLibrary.map((x:any)=>x.id)).size!==spriteLibrary.length)) ||
     (spriteTags!==undefined&&(!Array.isArray(spriteTags)||spriteTags.length>100||!spriteTags.every((tag:any)=>typeof tag==='string'&&tag.trim().length>0&&tag.length<=40)))||
     (spriteRemovedSeeds!==undefined&&(!Array.isArray(spriteRemovedSeeds)||spriteRemovedSeeds.length>500||!spriteRemovedSeeds.every((id:any)=>typeof id==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(id))))) throw new Error('备份内容不完整或含有无效数据，未导入。')
@@ -123,7 +123,7 @@ export async function importBackup(parent: BrowserWindow, prepare: () => void = 
   const old = join(root, 'sprites-before-import')
   rmSync(staging, { recursive: true, force: true }); mkdirSync(staging)
   for (const [pose, url] of Object.entries(data.sprites)) {
-    if (!POSES.includes(pose as any)) continue
+    if (!isSpriteKey(pose)) continue
     const [, mime, base64] = /^data:image\/(png|jpeg|webp|gif);base64,(.*)$/.exec(url!)!
     writeFileSync(join(staging, `${pose}.${mime === 'jpeg' ? 'jpg' : mime}`), Buffer.from(base64, 'base64'))
   }

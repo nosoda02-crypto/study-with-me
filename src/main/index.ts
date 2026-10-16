@@ -45,8 +45,9 @@ import {
   MAX_OPACITY
 } from './settingsStore'
 import {
-  Pose,
-  POSES,
+  type SpriteKey,
+  isSpriteKey,
+  stateSpriteKey,
   getAllCustomSprites,
   setCustomSprite,
   setStaticSprite,
@@ -604,8 +605,8 @@ async function pickImageFile(win: BrowserWindow | null): Promise<string | null> 
   return result.filePaths[0]
 }
 
-ipcMain.handle('sprites:pick', async (event, pose: Pose) => {
-  if (!POSES.includes(pose)) return null
+ipcMain.handle('sprites:pick', async (event, pose: SpriteKey) => {
+  if (!isSpriteKey(pose)) return null
 
   const filePath = await pickImageFile(BrowserWindow.fromWebContents(event.sender))
   if (!filePath) return null
@@ -626,8 +627,8 @@ ipcMain.handle('sprites:pickStatic', async (event) => {
   return sprites
 })
 
-ipcMain.handle('sprites:reset', (_event, pose: Pose) => {
-  if (!POSES.includes(pose)) return
+ipcMain.handle('sprites:reset', (_event, pose: SpriteKey) => {
+  if (!isSpriteKey(pose)) return
   resetCustomSprite(pose)
   broadcastSprites()
 })
@@ -645,7 +646,7 @@ ipcMain.handle('sprites:user-delete',(_event,id:string)=>{
   return true
 })
 ipcMain.handle('sprites:user-update', (_event,id:string,patch:{name?:string;tags?:string[]}) => updateUserSprite(id,patch))
-ipcMain.handle('sprites:user-apply-pose', (_event,id:string,pose:Pose) => {
+ipcMain.handle('sprites:user-apply-pose', (_event,id:string,pose:SpriteKey) => {
   const url=applyUserSpriteToPose(id,pose);if(url)broadcastSprites();return url
 })
 ipcMain.handle('sprites:user-apply', (_event,id:string,target:'cat'|'notify') => {
@@ -729,7 +730,10 @@ ipcMain.handle('notifications:set', (_event, value: NotificationPreferences) => 
 ipcMain.handle('workstates:get',()=>getWorkStates())
 ipcMain.handle('workstates:set',(_event,value:WorkStateDefinition[])=>{
   if(!Array.isArray(value)||!value.length||!value.every(validWorkStateDefinition)||!value.some(s=>s.id===getCurrentState())) throw new Error('状态设置无效')
+  const removed=getWorkStates().filter(state=>!value.some(next=>next.id===state.id))
   const saved=setWorkStates(value)
+  // A deleted state's own image goes with it.
+  if(removed.length){for(const state of removed)resetCustomSprite(stateSpriteKey(state.id));broadcastSprites()}
   for(const win of BrowserWindow.getAllWindows())win.webContents.send('workstate:updated',getCurrentState())
   return saved
 })

@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import type { UserSpriteItem } from '../../preload'
+import type { SpriteKey, SpriteMap, UserSpriteItem } from '../../preload'
+import type { WorkStateDefinition } from '../../shared/workStates'
 
 type Pose =
   | 'idle'
@@ -18,14 +19,15 @@ const POSE_LABELS: Record<Pose, string> = {
   notifyIcon: '通知图标'
 }
 
-const CAT_POSES: Pose[] = ['idle']
-const STATE_POSES: Pose[] = ['sleep']
 const NOTIFY_POSES: Pose[] = ['notifyIcon']
 
 function SpritePoseRow({
   pose,
+  label,
+  defaultUrl,
   customUrl,
   inheritedUrl,
+  inheritedNote,
   library,
   choosing,
   onChoose,
@@ -33,23 +35,27 @@ function SpritePoseRow({
   onUseLibrary,
   onReset
 }: {
-  pose: Pose
+  pose: SpriteKey
+  label?: string
+  defaultUrl?: string
   customUrl?: string
-  /** Image actually shown when this pose has none of its own (rest falls back to the idle image). */
+  /** Image actually shown when this key has none of its own, and the note explaining where it comes from. */
   inheritedUrl?: string
+  inheritedNote?: string
   library: UserSpriteItem[]
   choosing: boolean
-  onChoose: (pose: Pose | null) => void
-  onUpload: (pose: Pose) => void
-  onUseLibrary: (pose: Pose, id: string) => void
-  onReset: (pose: Pose) => void
+  onChoose: (pose: SpriteKey | null) => void
+  onUpload: (pose: SpriteKey) => void
+  onUseLibrary: (pose: SpriteKey, id: string) => void
+  onReset: (pose: SpriteKey) => void
 }): React.JSX.Element {
+  const title = label ?? POSE_LABELS[pose as Pose]
   return (
     <div className={`sprite-row-wrap${choosing ? ' choosing' : ''}`}>
       <div className="sprite-row">
-        <img className="sprite-preview" src={customUrl ?? inheritedUrl ?? DEFAULT_IMAGES[pose]} alt="" />
+        <img className="sprite-preview" src={customUrl ?? inheritedUrl ?? defaultUrl ?? DEFAULT_IMAGES[pose as Pose]} alt="" />
         <div className="sprite-row-body">
-          <span className="sprite-row-label">{POSE_LABELS[pose]}{!customUrl && inheritedUrl && <small className="sprite-row-note">跟随待机</small>}</span>
+          <span className="sprite-row-label">{title}{!customUrl && inheritedNote && <small className="sprite-row-note">{inheritedNote}</small>}</span>
           <div className="sprite-row-actions">
             <button aria-expanded={choosing} onClick={() => onChoose(choosing ? null : pose)}>选择图片…</button>
             <button className="ghost" disabled={!customUrl} onClick={() => onReset(pose)}>
@@ -58,7 +64,7 @@ function SpritePoseRow({
           </div>
         </div>
       </div>
-      {choosing && <div className="sprite-pose-picker" aria-label={`为「${POSE_LABELS[pose]}」选择贴图`}>
+      {choosing && <div className="sprite-pose-picker" aria-label={`为「${title}」选择贴图`}>
         {library.length > 0
           ? <div className="sprite-pose-picker-grid">{library.map(item => <button key={item.id} title={item.name} aria-label={`使用 ${item.name}`} onClick={() => onUseLibrary(pose, item.id)}><img src={item.url} alt="" /><span>{item.name}</span></button>)}</div>
           : <p className="sprite-library-empty">贴图库还是空的</p>}
@@ -69,13 +75,14 @@ function SpritePoseRow({
 }
 
 function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean; onClose?: () => void } = {}): React.JSX.Element {
-  const [sprites, setSprites] = useState<Partial<Record<Pose, string>>>({})
+  const [sprites, setSprites] = useState<SpriteMap>({})
+  const [workStates, setWorkStates] = useState<WorkStateDefinition[]>([])
   const [library,setLibrary]=useState<UserSpriteItem[]>([])
   const [tags,setTags]=useState<string[]>([])
   const [selectedTags,setSelectedTags]=useState<string[]>([])
   const [editing,setEditing]=useState<UserSpriteItem|null>(null)
   const [pendingDelete,setPendingDelete]=useState<string|null>(null)
-  const [choosingPose,setChoosingPose]=useState<Pose|null>(null)
+  const [choosingPose,setChoosingPose]=useState<SpriteKey|null>(null)
   const [tagText,setTagText]=useState('')
   const [managingTags,setManagingTags]=useState(false)
   const [tagDrafts,setTagDrafts]=useState<Record<string,string|null>>({})
@@ -88,6 +95,12 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
   useEffect(() => {
     window.api.getSprites().then(setSprites)
     return window.api.onSpritesUpdated(setSprites)
+  }, [])
+  useEffect(() => {
+    const loadStates = () => { window.api.getWorkStates().then(setWorkStates) }
+    loadStates()
+    // Saving the state list broadcasts a work-state update; pick up renamed/added states.
+    return window.api.onWorkStateUpdated(loadStates)
   }, [])
 
   useEffect(() => {
@@ -102,11 +115,11 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
     return()=>observer.disconnect()
   },[tags])
 
-  const handlePick = async (pose: Pose): Promise<void> => {
+  const handlePick = async (pose: SpriteKey): Promise<void> => {
     const dataUrl = await window.api.pickSprite(pose)
     if (dataUrl) { setSprites((prev) => ({ ...prev, [pose]: dataUrl }));setChoosingPose(null);await refreshLibrary() }
   }
-  const useLibraryForPose = async (pose: Pose, id: string): Promise<void> => {
+  const useLibraryForPose = async (pose: SpriteKey, id: string): Promise<void> => {
     const dataUrl = await window.api.applyUserSpriteToPose(id, pose)
     if (dataUrl) { setSprites((prev) => ({ ...prev, [pose]: dataUrl }));setChoosingPose(null) }
   }
@@ -138,7 +151,7 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
     await refreshLibrary();setManagingTags(false)
   }
 
-  const handleReset = async (pose: Pose): Promise<void> => {
+  const handleReset = async (pose: SpriteKey): Promise<void> => {
     await window.api.resetSprite(pose)
     setSprites((prev) => {
       const next = { ...prev }
@@ -148,6 +161,16 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
   }
 
   const spriteEditor=editing&&<div className="sprite-library-editor" aria-label="贴图标签编辑器"><strong>整理「{editing.name}」</strong><label>名称<input value={editing.name} placeholder="贴图名称" onChange={e=>setEditing({...editing,name:e.target.value})}/></label><label>自定义标签<input aria-label="贴图标签" value={tagText} placeholder="#全职高手 #黄少天" onChange={e=>setTagText(e.target.value)}/></label>{tags.length>0&&<div className="sprite-tag-suggestions" aria-label="选择已有标签">{tags.map(tag=><button key={tag} type="button" aria-pressed={parseTags(tagText).includes(tag)} className={parseTags(tagText).includes(tag)?'selected':''} onClick={()=>toggleEditorTag(tag)}>#{tag}</button>)}</div>}<small>可直接点选已有标签，也可以输入新标签；用空格、逗号或 # 分隔。</small><div><button onClick={()=>setEditing(null)}>取消</button><button className="primary-button" onClick={async()=>{const updated=await window.api.updateUserSprite(editing.id,{name:editing.name,tags:parseTags(tagText)});if(updated)await refreshLibrary();setEditing(null)}}>保存标签</button></div></div>
+
+  // Focus uses the idle image; every other state can have its own image and
+  // otherwise shows the rest image (which itself falls back to the idle image).
+  const restUrl = sprites.sleep ?? sprites.idle
+  const stateRows: { key: SpriteKey; label: string; inherited?: string; note?: string; fallback: string }[] = [
+    ...(workStates.some(state => state.id === 'focus') ? [] : [{ key: 'idle' as SpriteKey, label: '待机', fallback: DEFAULT_IMAGES.idle }]),
+    ...workStates.map(state => state.id === 'focus'
+      ? { key: 'idle' as SpriteKey, label: `${state.label}（待机图）`, fallback: DEFAULT_IMAGES.idle }
+      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: restUrl, note: '跟随休息图', fallback: DEFAULT_IMAGES.sleep })
+  ]
 
   return (
     <div className={`sprite-settings-panel${embedded ? ' embedded-settings-panel' : ''}`}>
@@ -163,24 +186,22 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
           新图片会收藏到贴图库，并同时设为桌宠的待机与休息姿态
         </span>
       </div>
-        <div className="sprite-section-title">桌宠姿态</div>
+        <div className="sprite-section-title">状态贴图（每个状态可以用不同的图）</div>
         <div className="sprite-rows">
-          {CAT_POSES.map((pose) => (
-            <SpritePoseRow key={pose} pose={pose} customUrl={sprites[pose]} inheritedUrl={pose === 'sleep' ? sprites.idle : undefined} library={library} choosing={choosingPose === pose} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
+          {stateRows.map(({ key, label, inherited, note, fallback }) => (
+            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} inheritedNote={note} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
           ))}
         </div>
 
-        <div className="sprite-section-title">状态贴图（午休 / 开会 / 下班时显示）</div>
+        <div className="sprite-section-title">休息图（没单独设置图的状态显示这张）</div>
         <div className="sprite-rows">
-          {STATE_POSES.map((pose) => (
-            <SpritePoseRow key={pose} pose={pose} customUrl={sprites[pose]} inheritedUrl={pose === 'sleep' ? sprites.idle : undefined} library={library} choosing={choosingPose === pose} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
-          ))}
+          {(() => { const key: SpriteKey = 'sleep'; return <SpritePoseRow pose={key} customUrl={sprites.sleep} inheritedUrl={sprites.idle} inheritedNote="跟随待机" library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} /> })()}
         </div>
 
         <div className="sprite-section-title">通知窗</div>
         <div className="sprite-rows">
-          {NOTIFY_POSES.map((pose) => (
-            <SpritePoseRow key={pose} pose={pose} customUrl={sprites[pose]} inheritedUrl={pose === 'sleep' ? sprites.idle : undefined} library={library} choosing={choosingPose === pose} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
+          {NOTIFY_POSES.map((key) => (
+            <SpritePoseRow key={key} pose={key} customUrl={sprites[key]} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
           ))}
         </div>
       </div>
