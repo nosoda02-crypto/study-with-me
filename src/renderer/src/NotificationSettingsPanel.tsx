@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { UserSpriteItem } from '../../preload'
-import type { CustomNoticeRule, NotificationPreferences, NoticeSchedule, NoticeTemplateKey } from '../../shared/notifications'
+import { effectiveIconMode, type CustomNoticeRule, type NotificationPreferences, type NoticeSchedule, type NoticeTemplateKey } from '../../shared/notifications'
 
 const DAYS = ['日', '一', '二', '三', '四', '五', '六']
 const blankRule = (): CustomNoticeRule => ({ id: `notice-${Date.now()}`, time: '09:00', message: '', schedule: 'weekdays', days: [1, 2, 3, 4, 5], enabled: true,iconSpriteId:'' })
@@ -10,11 +10,13 @@ export default function NotificationSettingsPanel(): React.JSX.Element {
   const [icon, setIcon] = useState('./cat/notifyIcon.svg')
   const [draft, setDraft] = useState<CustomNoticeRule | null>(null)
   const [library,setLibrary]=useState<UserSpriteItem[]>([])
+  const [choosingIcon,setChoosingIcon]=useState(false)
   useEffect(() => {
     window.api.getNotificationPreferences().then(setPrefs)
     window.api.getSprites().then(s => setIcon(s.notifyIcon ?? './cat/notifyIcon.svg'))
     window.api.getUserSprites().then(setLibrary)
-    return window.api.onSpritesUpdated(s => setIcon(s.notifyIcon ?? './cat/notifyIcon.svg'))
+    // Any upload/delete elsewhere broadcasts a sprite update: keep the sticker choices current.
+    return window.api.onSpritesUpdated(s => { setIcon(s.notifyIcon ?? './cat/notifyIcon.svg'); window.api.getUserSprites().then(setLibrary) })
   }, [])
   const save = async (next: NotificationPreferences): Promise<void> => setPrefs(await window.api.setNotificationPreferences(next))
   const local = (next: NotificationPreferences): void => setPrefs(next)
@@ -23,11 +25,22 @@ export default function NotificationSettingsPanel(): React.JSX.Element {
   const tags=[...new Set(library.flatMap(item=>item.tags))].sort()
   const iconOptions=(value:string,onChange:(value:string)=>void)=><select className="notice-icon-select" aria-label="消息贴图" value={value} onChange={e=>onChange(e.target.value)}><option value="">跟随随机池／当前图标</option>{library.map(item=><option value={item.id} key={item.id}>{item.name}{item.tags.length?` · ${item.tags.map(tag=>`#${tag}`).join(' ')}`:''}</option>)}</select>
   if (!prefs) return <div className="notification-settings-panel"><p className="sprite-hint">正在读取提醒设置…</p></div>
+  const iconMode=effectiveIconMode(prefs)
+  const pool=library.filter(item=>prefs.randomIconTags.length>0&&prefs.randomIconTags.every(tag=>item.tags.includes(tag)))
   return <div className="notification-settings-panel embedded-settings-panel">
-    <div className="notice-icon-row"><img src={icon} alt="弹窗图标"/><div><strong>消息角色</strong><span>图标固定在弹窗最左侧，像桌宠在说话。</span></div><button onClick={async () => { const next = await window.api.pickSprite('notifyIcon'); if (next) {setIcon(next);setLibrary(await window.api.getUserSprites())} }}>更换</button></div>
+    <div className="notice-icon-card">
+    <div className="notice-icon-row"><img src={iconMode==='random'?pool[0]?.url??icon:icon} alt="弹窗图标"/><div><strong>消息角色</strong><span>{iconMode==='fixed'?'弹窗左边固定用这张图，像桌宠在说话。':pool.length?`每次弹窗从随机池的 ${pool.length} 张贴图里挑一张。`:'随机池还是空的，暂时用固定图片。'}</span></div>{iconMode==='fixed'&&<button aria-expanded={choosingIcon} onClick={()=>setChoosingIcon(value=>!value)}>更换</button>}</div>
+    <div className="notice-location notice-icon-mode" role="radiogroup" aria-label="消息角色方式">{([['fixed','固定图片'],['random','按标签随机']] as const).map(([value,label])=><button key={value} role="radio" aria-checked={iconMode===value} className={iconMode===value?'selected':''} onClick={()=>{setChoosingIcon(false);void save({...prefs,iconMode:value})}}>{label}</button>)}</div>
+    {iconMode==='fixed'&&choosingIcon&&<div className="sprite-pose-picker notice-icon-picker" aria-label="选择消息角色图片">
+      {library.length?<div className="sprite-pose-picker-grid">{library.map(item=><button key={item.id} title={item.name} aria-label={`使用 ${item.name}`} onClick={async()=>{const next=await window.api.applyUserSpriteToPose(item.id,'notifyIcon');if(next){setIcon(next);setChoosingIcon(false)}}}><img src={item.url} alt=""/><span>{item.name}</span></button>)}</div>:<p className="sprite-library-empty">贴图库还是空的</p>}
+      <div className="sprite-pose-picker-actions"><button onClick={()=>setChoosingIcon(false)}>取消</button><button className="primary-button" onClick={async()=>{const next=await window.api.pickSprite('notifyIcon');if(next){setIcon(next);setChoosingIcon(false);setLibrary(await window.api.getUserSprites())}}}>从电脑上传…</button></div>
+    </div>}
+    {iconMode==='random'&&<>
     <h3 className="settings-section">随机图片标签</h3>
     <div className="notice-tag-pool">{tags.length?tags.map(tag=><button key={tag} className={prefs.randomIconTags.includes(tag)?'selected':''} aria-pressed={prefs.randomIconTags.includes(tag)} onClick={()=>save({...prefs,randomIconTags:prefs.randomIconTags.includes(tag)?prefs.randomIconTags.filter(value=>value!==tag):[...prefs.randomIconTags,tag]})}>#{tag}</button>):<small>先在“我的贴图库”里添加标签，即可按标签建立随机池。</small>}</div>
     {prefs.randomIconTags.length>1&&<p className="notice-pool-hint">随机池会选择同时含有 {prefs.randomIconTags.map(tag=>`#${tag}`).join('、')} 的贴图。</p>}
+    </>}
+    </div>
     <label className="pet-name-field"><span>桌宠名字</span><input aria-label="桌宠名字" maxLength={16} value={prefs.petName} onChange={e=>local({...prefs,petName:e.target.value})} onBlur={()=>prefs.petName.trim()&&save(prefs)}/></label>
     <h3 className="settings-section">出现位置</h3>
     <div className="notice-location">{([['pet','人物头顶'],['top-right','屏幕右上角']] as const).map(([value,label]) => <button key={value} className={prefs.location === value ? 'selected' : ''} onClick={() => save({ ...prefs, location:value })}>{label}</button>)}</div>

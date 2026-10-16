@@ -12,6 +12,10 @@ export interface CustomNoticeRule {
   iconSpriteId?: string
 }
 
+export type NoticeIconMode = 'fixed' | 'random'
+export const effectiveIconMode = (prefs: Pick<NotificationPreferences, 'iconMode' | 'randomIconTags'>): NoticeIconMode =>
+  prefs.iconMode === 'fixed' || prefs.iconMode === 'random' ? prefs.iconMode : prefs.randomIconTags.length ? 'random' : 'fixed'
+
 export interface NotificationPreferences {
   petName: string
   location: NoticeLocation
@@ -22,6 +26,8 @@ export interface NotificationPreferences {
   keystrokeStep: number
   customRules: CustomNoticeRule[]
   randomIconTags: string[]
+  /** Message avatar: one fixed image, or a random sticker carrying all `randomIconTags`. Unset = random when tags are chosen. */
+  iconMode?: NoticeIconMode
   templateIcons: Record<NoticeTemplateKey,string>
   templates: Record<NoticeTemplateKey,string>
 }

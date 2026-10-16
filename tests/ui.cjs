@@ -155,6 +155,15 @@ app.whenReady().then(async()=>{
   detailWin=await openDetail('notifications')
   assert.match(await detailWin.webContents.executeJavaScript('document.querySelector(".hub-detail-sheet").textContent'),/整点报时/)
   assert.equal(await detailWin.webContents.executeJavaScript('document.querySelector("[aria-label=弹窗停留秒数]").value'),'6.5')
+  // Fixed avatar: 更换 opens the sticker library; picking one sets the message icon.
+  assert.equal(await detailWin.webContents.executeJavaScript('document.querySelector(".notice-icon-mode [aria-checked=true]").textContent'),'固定图片')
+  await detailWin.webContents.executeJavaScript('document.querySelector(".notice-icon-row button").click()');await pause(80)
+  await detailWin.webContents.executeJavaScript('document.querySelector(".notice-icon-picker [aria-label=\\"使用 趴趴猫\\"]").click()');await pause(120)
+  assert.equal(await detailWin.webContents.executeJavaScript('window.api.getSprites().then(s=>!!s.notifyIcon)'),true)
+  assert.equal(await detailWin.webContents.executeJavaScript('document.querySelectorAll(".notice-icon-picker").length'),0)
+  // Random avatar: switch mode, then choose the tag pool.
+  await detailWin.webContents.executeJavaScript('[...document.querySelectorAll(".notice-icon-mode button")].find(b=>b.textContent==="按标签随机").click()');await pause(100)
+  assert.equal(await detailWin.webContents.executeJavaScript('window.testApi.noticePrefs().iconMode'),'random')
   await detailWin.webContents.executeJavaScript('Array.from(document.querySelectorAll(".notice-tag-pool button")).find(button=>button.textContent.includes("治愈系")).click()');await pause(100)
   assert.deepEqual(await detailWin.webContents.executeJavaScript('window.testApi.noticePrefs().randomIconTags'),['治愈系'])
   await capture(detailWin,'notifications-settings')

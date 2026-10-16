@@ -78,6 +78,7 @@ export function validateBackup(v: unknown): asserts v is Backup {
       (c.notifications.displaySeconds!==undefined&&(!number(c.notifications.displaySeconds)||c.notifications.displaySeconds<2||c.notifications.displaySeconds>30)) ||
       !number(c.notifications.keystrokeStep) || c.notifications.keystrokeStep < 100 || !Array.isArray(c.notifications.customRules) || !c.notifications.customRules.every(validNoticeRule) ||
       (c.notifications.randomIconTags!==undefined&&(!Array.isArray(c.notifications.randomIconTags)||!c.notifications.randomIconTags.every((tag:any)=>typeof tag==='string'))) ||
+      (c.notifications.iconMode!==undefined&&!['fixed','random'].includes(c.notifications.iconMode)) ||
       (c.notifications.randomIconFolders!==undefined&&(!Array.isArray(c.notifications.randomIconFolders)||!c.notifications.randomIconFolders.every((folder:any)=>typeof folder==='string'))) ||
       (c.notifications.templateIcons!==undefined&&(!object(c.notifications.templateIcons)||!Object.values(c.notifications.templateIcons).every(value=>typeof value==='string'))) ||
       (c.notifications.templates !== undefined && (!object(c.notifications.templates) || !['hourly','stateHourly','keystroke','off'].every(k=>typeof c.notifications.templates[k]==='string') || (c.notifications.templates.stateSwitch!==undefined&&typeof c.notifications.templates.stateSwitch!=='string') || (!['taskDue','taskComplete'].every(k=>typeof c.notifications.templates[k]==='string') && typeof c.notifications.templates.task!=='string'))))) ||

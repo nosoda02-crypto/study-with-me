@@ -1,5 +1,5 @@
 import type { PanelPreferences } from '../shared/appearance'
-import { validNoticeRule, noticeRuleMatches, isKeystrokeMilestone, renderNoticeTemplate, type NotificationPreferences, type NoticeTemplateKey } from '../shared/notifications'
+import { validNoticeRule, noticeRuleMatches, isKeystrokeMilestone, renderNoticeTemplate, effectiveIconMode, type NotificationPreferences, type NoticeTemplateKey } from '../shared/notifications'
 import { validWorkStateDefinition, type WorkStateDefinition } from '../shared/workStates'
 import { completedOn, scheduledOn, type TaskOptions, type TaskPatch, type TaskList } from '../shared/tasks'
 import type { CheckinPeriod } from '../shared/statistics'
@@ -284,7 +284,7 @@ function showNotify(payload: NotifyPayload): void {
     const fixedId=payload.iconSpriteId||(payload.kind?preferences.templateIcons[payload.kind]:'')
     const fixed=fixedId?library.find(item=>item.id===fixedId):undefined
     // Multiple selected tags narrow the pool to their intersection.
-    const pool=library.filter(item=>preferences.randomIconTags.length>0&&preferences.randomIconTags.every(tag=>item.tags.includes(tag)))
+    const pool=effectiveIconMode(preferences)==='random'?library.filter(item=>preferences.randomIconTags.length>0&&preferences.randomIconTags.every(tag=>item.tags.includes(tag))):[]
     const random=pool.length?pool[Math.floor(Math.random()*pool.length)]:undefined
     const iconId=(fixed??random)?.id
     notifyWindow.webContents.send('notify:show', { title:preferences.petName,message:payload.message,icon:iconId?getUserSpriteUrl(iconId):undefined })
@@ -646,6 +646,8 @@ ipcMain.handle('sprites:user-delete',(_event,id:string)=>{
   setNotificationPreferences({...preferences,
     templateIcons:Object.fromEntries(Object.entries(preferences.templateIcons).map(([kind,value])=>[kind,value===id?'':value])) as typeof preferences.templateIcons,
     customRules:preferences.customRules.map(rule=>rule.iconSpriteId===id?{...rule,iconSpriteId:undefined}:rule)})
+  // Lets open panels refresh their sticker lists.
+  broadcastSprites()
   return true
 })
 ipcMain.handle('sprites:user-update', (_event,id:string,patch:{name?:string;tags?:string[]}) => updateUserSprite(id,patch))
@@ -729,7 +731,7 @@ ipcMain.on('window-settings:set-opacity', (_event, value: number) => applyWindow
 
 ipcMain.handle('notifications:get', () => getNotificationPreferences())
 ipcMain.handle('notifications:set', (_event, value: NotificationPreferences) => {
-  if (!value || typeof value.petName!=='string'||!value.petName.trim()||!value.templates||!value.templateIcons||!['hourly','stateSwitch','stateHourly','keystroke','taskDue','taskComplete','off'].every(k=>typeof value.templates[k as keyof typeof value.templates]==='string'&&typeof value.templateIcons[k as keyof typeof value.templateIcons]==='string')||!Array.isArray(value.randomIconTags)||!value.randomIconTags.every(tag=>typeof tag==='string'&&tag.trim().length>0)||!['pet', 'top-right'].includes(value.location)||!Number.isFinite(value.displaySeconds)||value.displaySeconds<2||value.displaySeconds>30 || typeof value.hourlyEnabled !== 'boolean' || typeof value.stateHourlyEnabled !== 'boolean' || typeof value.keystrokeEnabled !== 'boolean' || !Number.isFinite(value.keystrokeStep) || value.keystrokeStep < 100 || !Array.isArray(value.customRules) || !value.customRules.every(validNoticeRule)) throw new Error('提醒设置无效')
+  if (!value || typeof value.petName!=='string'||!value.petName.trim()||!value.templates||!value.templateIcons||!['hourly','stateSwitch','stateHourly','keystroke','taskDue','taskComplete','off'].every(k=>typeof value.templates[k as keyof typeof value.templates]==='string'&&typeof value.templateIcons[k as keyof typeof value.templateIcons]==='string')||!Array.isArray(value.randomIconTags)||!value.randomIconTags.every(tag=>typeof tag==='string'&&tag.trim().length>0)||(value.iconMode!==undefined&&value.iconMode!=='fixed'&&value.iconMode!=='random')||!['pet', 'top-right'].includes(value.location)||!Number.isFinite(value.displaySeconds)||value.displaySeconds<2||value.displaySeconds>30 || typeof value.hourlyEnabled !== 'boolean' || typeof value.stateHourlyEnabled !== 'boolean' || typeof value.keystrokeEnabled !== 'boolean' || !Number.isFinite(value.keystrokeStep) || value.keystrokeStep < 100 || !Array.isArray(value.customRules) || !value.customRules.every(validNoticeRule)) throw new Error('提醒设置无效')
   const saved = setNotificationPreferences(value)
   if (notifyWindow && catWindow && notifyWindow.isVisible()) positionNotifyWindow(notifyWindow, catWindow, saved.location, statusWindow?.isVisible()?statusWindow:null)
   return saved

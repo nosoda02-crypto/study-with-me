@@ -79,7 +79,7 @@ export function getNotificationPreferences(): NotificationPreferences {
 
 export function setNotificationPreferences(value: NotificationPreferences): NotificationPreferences {
   const merged={...getNotificationPreferences(),...value}
-  const next = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...merged, petName:merged.petName.trim(),displaySeconds:Math.min(30,Math.max(2,Number(merged.displaySeconds)||6.5)), templates:{...DEFAULT_NOTIFICATION_PREFERENCES.templates,...merged.templates},templateIcons:{...DEFAULT_NOTIFICATION_PREFERENCES.templateIcons,...merged.templateIcons},randomIconTags:[...new Set(merged.randomIconTags.map(tag=>tag.trim()).filter(Boolean))], keystrokeStep: Math.max(100, Math.round(merged.keystrokeStep)), customRules: merged.customRules }
+  const next = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...merged, petName:merged.petName.trim(),displaySeconds:Math.min(30,Math.max(2,Number(merged.displaySeconds)||6.5)), templates:{...DEFAULT_NOTIFICATION_PREFERENCES.templates,...merged.templates},templateIcons:{...DEFAULT_NOTIFICATION_PREFERENCES.templateIcons,...merged.templateIcons},randomIconTags:[...new Set(merged.randomIconTags.map(tag=>tag.trim()).filter(Boolean))],iconMode:merged.iconMode==='fixed'||merged.iconMode==='random'?merged.iconMode:undefined, keystrokeStep: Math.max(100, Math.round(merged.keystrokeStep)), customRules: merged.customRules }
   store.set('notifications', next)
   return next
 }
