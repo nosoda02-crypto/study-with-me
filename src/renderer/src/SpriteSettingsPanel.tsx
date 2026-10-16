@@ -27,7 +27,6 @@ function SpritePoseRow({
   defaultUrl,
   customUrl,
   inheritedUrl,
-  inheritedNote,
   library,
   choosing,
   onChoose,
@@ -42,9 +41,8 @@ function SpritePoseRow({
   description?: string
   defaultUrl?: string
   customUrl?: string
-  /** Image actually shown when this key has none of its own, and the note explaining where it comes from. */
+  /** Image actually shown when this key has none of its own. */
   inheritedUrl?: string
-  inheritedNote?: string
   library: UserSpriteItem[]
   choosing: boolean
   onChoose: (pose: SpriteKey | null) => void
@@ -61,7 +59,7 @@ function SpritePoseRow({
       <div className="sprite-row">
         <img className="sprite-preview" src={customUrl ?? inheritedUrl ?? defaultUrl ?? DEFAULT_IMAGES[pose as Pose]} alt="" />
         <div className="sprite-row-body">
-          <span className="sprite-row-label">{title}{!customUrl && inheritedNote && <small className="sprite-row-note">{inheritedNote}</small>}</span>
+          <span className="sprite-row-label">{title}</span>
           {description && <span className="sprite-row-desc">{description}</span>}
           <div className="sprite-row-actions">
             <button aria-expanded={choosing} onClick={() => onChoose(choosing ? null : pose)}>选择图片…</button>
@@ -174,11 +172,11 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
   // Focus keeps the idle image; every other state can have its own image and
   // otherwise follows the focus image.
   const focusLabel = workStates.find(state => state.id === 'focus')?.label ?? '待机'
-  const stateRows: { key: SpriteKey; label: string; inherited?: string; note?: string; fallback: string }[] = [
+  const stateRows: { key: SpriteKey; label: string; inherited?: string; fallback: string }[] = [
     ...(workStates.some(state => state.id === 'focus') ? [] : [{ key: 'idle' as SpriteKey, label: '待机', fallback: DEFAULT_IMAGES.idle }]),
     ...workStates.map(state => state.id === 'focus'
       ? { key: 'idle' as SpriteKey, label: state.label, fallback: DEFAULT_IMAGES.idle }
-      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: sprites.idle, note: `跟随${focusLabel}`, fallback: DEFAULT_IMAGES.sleep })
+      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: sprites.idle, fallback: DEFAULT_IMAGES.sleep })
   ]
   const unify = async (key: SpriteKey): Promise<void> => {
     const updated = await window.api.unifyStateSprites(key)
@@ -201,8 +199,8 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
       </div>
         <div className="sprite-section-title">状态贴图（每个状态可以用不同的图，没单独选的跟随「{focusLabel}」）</div>
         <div className="sprite-rows">
-          {stateRows.map(({ key, label, inherited, note, fallback }) => (
-            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} inheritedNote={note} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} onUnify={unify} />
+          {stateRows.map(({ key, label, inherited, fallback }) => (
+            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} onUnify={unify} />
           ))}
         </div>
 
