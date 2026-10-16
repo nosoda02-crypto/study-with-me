@@ -185,7 +185,7 @@ app.whenReady().then(async()=>{
   await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-tag-filter-toggle").click()');await pause(50)
   await detailWin.webContents.executeJavaScript('[...document.querySelectorAll(".sprite-library-heading-actions button")].find(b=>b.textContent==="编辑").click()');await pause(50)
   await fillIn(detailWin,'[aria-label="新标签名称"]','游戏');await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-tag-add button").click()');await pause(50)
-  await fillIn(detailWin,'[aria-label="编辑标签 治愈系"]','温柔');await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-tag-manager .primary-button").click()');await pause(100)
+  await fillIn(detailWin,'[aria-label="编辑标签 治愈系"]','温柔');await detailWin.webContents.executeJavaScript('[...document.querySelectorAll(".sprite-library-heading-actions button")].find(b=>b.textContent==="完成").click()');await pause(100)
   assert.match(await detailWin.webContents.executeJavaScript('document.querySelector(".user-sprite-library").textContent'),/#温柔/)
   await click(detailWin,'编辑标签');await pause(50)
   assert.equal(await detailWin.webContents.executeJavaScript('document.querySelector(".sprite-library-editor").parentElement.classList.contains("user-sprite-cell")'),true)

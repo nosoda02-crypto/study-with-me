@@ -5,7 +5,7 @@ import { completedOn, scheduledOn, type TaskOptions, type TaskPatch, type TaskLi
 import type { CheckinPeriod } from '../shared/statistics'
 import { exportBackup, importBackup, saveUpdateSafetyBackup } from './backup'
 import { app, BrowserWindow, dialog, ipcMain, powerMonitor, nativeTheme } from 'electron'
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, unlinkSync, watchFile, writeFileSync } from 'fs'
 import { extname, join } from 'path'
 import { homedir } from 'os'
 import {
@@ -124,6 +124,18 @@ function setStartupEnabled(enabled:boolean):boolean{
   return getStartupEnabled()
 }
 let trayHandle: TrayHandle | null = null
+// Dev build only: notice when `npm run build` replaced the code this process is running.
+let codeUpdated = false
+function watchForCodeUpdates(): void {
+  if (app.isPackaged) return
+  const files = ['out/main/index.js', 'out/preload/index.js', 'out/renderer/index.html'].map(file => join(app.getAppPath(), file))
+  for (const file of files) watchFile(file, { interval: 4000 }, (current, previous) => {
+    if (codeUpdated || current.mtimeMs === previous.mtimeMs) return
+    codeUpdated = true
+    trayHandle?.refresh()
+    showNotify({ title: getNotificationPreferences().petName, message: '开发版代码已更新：点菜单栏小爪子 →「代码已更新，点击重启」就能用上新功能。' })
+  })
+}
 let clickThrough = false
 let keyTrackingActive = false
 let windowScale = getWindowScale()
@@ -441,6 +453,7 @@ app.whenReady().then(() => {
   if (previousVersion && previousVersion !== currentVersion) saveUpdateSafetyBackup(previousVersion, currentVersion)
   setLastAppVersion(currentVersion)
   migrateDiaryImages()
+  watchForCodeUpdates()
   migrateRestSprite(getWorkStates().filter(state=>state.id!=='focus').map(state=>state.id))
   const seeded=seedBundledUserSprites()
   if(seeded.added&&seeded.randomIconTags.length){
@@ -479,6 +492,7 @@ app.whenReady().then(() => {
   }
 
   trayHandle = createTray({
+    hasCodeUpdate: () => codeUpdated,
     isVisible: () => catWindow?.isVisible() ?? false,
     isClickThrough: () => clickThrough,
     isKeyTrackingActive: () => keyTrackingActive,

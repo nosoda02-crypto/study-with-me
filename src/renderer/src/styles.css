@@ -1702,4 +1702,5 @@ h1,h2,h3,p {
 .state-images-heading strong { font-size:calc(11px * var(--panel-font-scale,1)); color:var(--secondary); font-weight:600; }
 .state-images-heading .text-button:disabled { opacity:.4; }
 .state-images-confirm { margin-bottom:8px; border-radius:12px; }
+.sprite-library-heading-actions .text-button.secondary { color:var(--secondary); }
 

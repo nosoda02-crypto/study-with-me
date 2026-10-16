@@ -12,6 +12,8 @@ interface TrayCallbacks {
   openSpriteSettings: () => void
   openWindowSettings: () => void
   retryKeyTracking: () => void
+  /** Dev build only: the compiled code changed since this process started. */
+  hasCodeUpdate?: () => boolean
 }
 
 export interface TrayHandle {
@@ -30,6 +32,13 @@ export function createTray(callbacks: TrayCallbacks): TrayHandle {
 
   const rebuildMenu = (): void => {
     const menu = Menu.buildFromTemplate([
+      ...(callbacks.hasCodeUpdate?.()
+        ? ([
+            // app.quit() runs the normal will-quit flush before the relaunch.
+            { label: '⟳ 代码已更新，点击重启', click: () => { app.relaunch(); app.quit() } },
+            { type: 'separator' }
+          ] as Electron.MenuItemConstructorOptions[])
+        : []),
       {
         label: callbacks.isVisible() ? '隐藏桌宠' : '显示桌宠',
         click: () => {
