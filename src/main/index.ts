@@ -385,6 +385,8 @@ function openHub(detail?: 'sprites' | 'window' | 'notifications' | 'states'): vo
     hubDetailWindow=null
     hubWindow = null
   })
+  // However the journal gets hidden (single click on the pet, tray, …), its side panel goes with it.
+  hubWindow.on('hide', () => { if (hubDetailWindow && !hubDetailWindow.isDestroyed()) hubDetailWindow.close() })
   hubWindow.on('resize',()=>{
     if(syncingHubPair||!hubWindow||!hubDetailWindow||hubDetailWindow.isDestroyed())return
     syncingHubPair=true
@@ -482,7 +484,7 @@ app.whenReady().then(() => {
     isKeyTrackingActive: () => keyTrackingActive,
     toggleVisible,
     toggleClickThrough: () => setClickThrough(!clickThrough),
-    openStatus: () => { hubDetailWindow?.close();hubWindow?.hide(); showHoverCard() },
+    openStatus: () => { hubWindow?.hide(); showHoverCard() },
     openHub,
     openSpriteSettings,
     openWindowSettings,
