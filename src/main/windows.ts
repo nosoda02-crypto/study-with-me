@@ -335,7 +335,8 @@ export type HubDetailKind='sprites'|'window'|'notifications'|'states'
 export function getHubDetailPlacement(hub:BrowserWindow):{direction:HubExtensionDirection;bounds:Electron.Rectangle}{
   const current=hub.getBounds()
   const area=screen.getDisplayMatching(current).workArea
-  const sideWidth=Math.max(300,Math.min(320,area.width-current.width))
+  // Default side panel width; narrower (down to 300) only when the screen has no room.
+  const sideWidth=Math.max(300,Math.min(400,area.width-current.width))
   const leftSpace=current.x-area.x
   const rightSpace=area.x+area.width-(current.x+current.width)
   const direction:HubExtensionDirection=rightSpace>=sideWidth||rightSpace>=leftSpace?'right':'left'

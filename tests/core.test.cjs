@@ -442,3 +442,10 @@ test('an old shared rest image becomes per-state images, and unify gives every s
   assert.equal(all.idle,lunch)
   assert.deepEqual(Object.keys(all).filter(k=>k.startsWith('state-')),[])
 })
+test('the journal side panel opens 400px wide when the screen has room, narrower otherwise',()=>{
+  const h=harness(),w=h.load('src/main/windows.ts')
+  const hub=bounds=>({getBounds:()=>({...bounds})})
+  assert.equal(w.getHubDetailPlacement(hub({x:300,y:100,width:400,height:540})).bounds.width,400)
+  assert.equal(w.getHubDetailPlacement(hub({x:0,y:100,width:1100,height:540})).bounds.width,340)
+  assert.equal(w.getHubDetailPlacement(hub({x:0,y:100,width:1300,height:540})).bounds.width,300)
+})
