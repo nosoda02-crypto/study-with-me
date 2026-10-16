@@ -169,8 +169,7 @@ export function getCustomSpriteUrl(pose: SpriteKey): string | null {
 
 export function getAllCustomSprites(): Partial<Record<SpriteKey, string>> {
   const result: Partial<Record<SpriteKey, string>> = {}
-  const stateKeys = readdirSync(spritesDir()).map(file => file.slice(0, -extname(file).length)).filter(key => STATE_KEY.test(key)) as StateSpriteKey[]
-  for (const pose of [...POSES, ...new Set(stateKeys)]) {
+  for (const pose of [...POSES, ...existingStateKeys()]) {
     const url = getCustomSpriteUrl(pose)
     if (url) result[pose] = url
   }
@@ -191,12 +190,34 @@ export function setCustomSprite(pose: SpriteKey, sourcePath: string): string {
   return toDataUrl(target)
 }
 
+/** "Set as pet": the focus (idle) image; states without their own image follow it. */
 export function setStaticSprite(sourcePath: string): Partial<Record<Pose, string>> {
   const result: Partial<Record<Pose, string>> = {}
-  for (const pose of [...CAT_POSES, ...STATE_POSES]) {
+  for (const pose of CAT_POSES) {
     result[pose] = setCustomSprite(pose, sourcePath)
   }
   return result
+}
+
+const existingStateKeys = (): StateSpriteKey[] => [...new Set(readdirSync(spritesDir()).map(file => file.slice(0, -extname(file).length)).filter(key => STATE_KEY.test(key)))] as StateSpriteKey[]
+
+/**
+ * The shared "rest" image is gone: non-focus states without their own image now
+ * follow the focus image. Keep what users saw by turning an old rest image into
+ * each non-focus state's own image (only where that state has none yet).
+ */
+export function migrateRestSprite(nonFocusStateIds: string[]): void {
+  const rest = findCustomFile('sleep'); if (!rest) return
+  for (const id of nonFocusStateIds) { const key = stateSpriteKey(id); if (STATE_KEY.test(key) && !findCustomFile(key)) setCustomSprite(key, rest) }
+  resetCustomSprite('sleep')
+}
+
+/** "Unify": every state shows `key`'s current image (focus gets it, all per-state images are cleared). */
+export function unifyStateSprites(key: SpriteKey): Partial<Record<SpriteKey, string>> {
+  const source = key === 'idle' ? null : findCustomFile(key)
+  if (source) setCustomSprite('idle', source)
+  for (const stateKey of existingStateKeys()) resetCustomSprite(stateKey)
+  return getAllCustomSprites()
 }
 
 export function resetCustomSprite(pose: SpriteKey): void {

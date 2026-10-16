@@ -19,7 +19,6 @@ const POSE_LABELS: Record<Pose, string> = {
   notifyIcon: '默认头像'
 }
 
-const NOTIFY_POSES: Pose[] = ['notifyIcon']
 
 function SpritePoseRow({
   pose,
@@ -34,7 +33,8 @@ function SpritePoseRow({
   onChoose,
   onUpload,
   onUseLibrary,
-  onReset
+  onReset,
+  onUnify
 }: {
   pose: SpriteKey
   label?: string
@@ -51,7 +51,10 @@ function SpritePoseRow({
   onUpload: (pose: SpriteKey) => void
   onUseLibrary: (pose: SpriteKey, id: string) => void
   onReset: (pose: SpriteKey) => void
+  /** Give every state this row's current image. */
+  onUnify?: (pose: SpriteKey) => void
 }): React.JSX.Element {
+  const [confirmUnify, setConfirmUnify] = useState(false)
   const title = label ?? POSE_LABELS[pose as Pose]
   return (
     <div className={`sprite-row-wrap${choosing ? ' choosing' : ''}`}>
@@ -65,9 +68,11 @@ function SpritePoseRow({
             <button className="ghost" disabled={!customUrl} onClick={() => onReset(pose)}>
               恢复默认
             </button>
+            {onUnify && <button className="ghost" aria-label={`所有状态都用「${title}」的图`} onClick={() => setConfirmUnify(true)}>全部统一</button>}
           </div>
         </div>
       </div>
+      {confirmUnify && onUnify && <div className="sprite-unify-confirm" role="group" aria-label="确认统一状态贴图"><span>所有状态都换成这张图？各状态单独选的图会被替换。</span><button onClick={() => setConfirmUnify(false)}>取消</button><button className="primary-button" onClick={() => { setConfirmUnify(false); onUnify(pose) }}>统一</button></div>}
       {choosing && <div className="sprite-pose-picker" aria-label={`为「${title}」选择贴图`}>
         {library.length > 0
           ? <div className="sprite-pose-picker-grid">{library.map(item => <button key={item.id} title={item.name} aria-label={`使用 ${item.name}`} onClick={() => onUseLibrary(pose, item.id)}><img src={item.url} alt="" /><span>{item.name}</span></button>)}</div>
@@ -166,17 +171,19 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
 
   const spriteEditor=editing&&<div className="sprite-library-editor" aria-label="贴图标签编辑器"><strong>整理「{editing.name}」</strong><label>名称<input value={editing.name} placeholder="贴图名称" onChange={e=>setEditing({...editing,name:e.target.value})}/></label><label>自定义标签<input aria-label="贴图标签" value={tagText} placeholder="#全职高手 #黄少天" onChange={e=>setTagText(e.target.value)}/></label>{tags.length>0&&<div className="sprite-tag-suggestions" aria-label="选择已有标签">{tags.map(tag=><button key={tag} type="button" aria-pressed={parseTags(tagText).includes(tag)} className={parseTags(tagText).includes(tag)?'selected':''} onClick={()=>toggleEditorTag(tag)}>#{tag}</button>)}</div>}<small>可直接点选已有标签，也可以输入新标签；用空格、逗号或 # 分隔。</small><div><button onClick={()=>setEditing(null)}>取消</button><button className="primary-button" onClick={async()=>{const updated=await window.api.updateUserSprite(editing.id,{name:editing.name,tags:parseTags(tagText)});if(updated)await refreshLibrary();setEditing(null)}}>保存标签</button></div></div>
 
-  // Focus uses the idle image; every other state can have its own image and
-  // otherwise shows the rest image (which itself falls back to the idle image).
-  const restUrl = sprites.sleep ?? sprites.idle
-  const usingRest = workStates.filter(state => state.id !== 'focus' && !sprites[`state-${state.id}`]).map(state => state.label)
-  const restDescription = usingRest.length ? `没单独选图的状态都显示这张，目前用于：${usingRest.join('、')}` : '所有状态都已单独选图，暂时没有状态用到这张'
+  // Focus keeps the idle image; every other state can have its own image and
+  // otherwise follows the focus image.
+  const focusLabel = workStates.find(state => state.id === 'focus')?.label ?? '待机'
   const stateRows: { key: SpriteKey; label: string; inherited?: string; note?: string; fallback: string }[] = [
     ...(workStates.some(state => state.id === 'focus') ? [] : [{ key: 'idle' as SpriteKey, label: '待机', fallback: DEFAULT_IMAGES.idle }]),
     ...workStates.map(state => state.id === 'focus'
-      ? { key: 'idle' as SpriteKey, label: `${state.label}（待机图）`, fallback: DEFAULT_IMAGES.idle }
-      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: restUrl, note: '跟随通用图', fallback: DEFAULT_IMAGES.sleep })
+      ? { key: 'idle' as SpriteKey, label: state.label, fallback: DEFAULT_IMAGES.idle }
+      : { key: `state-${state.id}` as SpriteKey, label: state.label, inherited: sprites.idle, note: `跟随${focusLabel}`, fallback: DEFAULT_IMAGES.sleep })
   ]
+  const unify = async (key: SpriteKey): Promise<void> => {
+    const updated = await window.api.unifyStateSprites(key)
+    if (updated) setSprites(updated)
+  }
 
   return (
     <div className={`sprite-settings-panel${embedded ? ' embedded-settings-panel' : ''}`}>
@@ -189,27 +196,16 @@ function SpriteSettingsPanel({ embedded = false, onClose }: { embedded?: boolean
       <div className="sprite-static-row">
         <button onClick={handlePickStatic}>添加一张贴图…</button>
         <span className="sprite-hint sprite-hint-inline">
-          新图片会收藏到贴图库，并同时设为桌宠的待机与休息姿态
+          新图片会收藏到贴图库，并设为「{focusLabel}」的图；没单独选图的状态也会跟着用
         </span>
       </div>
-        <div className="sprite-section-title">状态贴图（每个状态可以用不同的图）</div>
+        <div className="sprite-section-title">状态贴图（每个状态可以用不同的图，没单独选的跟随「{focusLabel}」）</div>
         <div className="sprite-rows">
           {stateRows.map(({ key, label, inherited, note, fallback }) => (
-            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} inheritedNote={note} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
+            <SpritePoseRow key={key} pose={key} label={label} defaultUrl={fallback} customUrl={sprites[key]} inheritedUrl={inherited} inheritedNote={note} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} onUnify={unify} />
           ))}
         </div>
 
-        <div className="sprite-section-title">其他状态的通用图</div>
-        <div className="sprite-rows">
-          {(() => { const key: SpriteKey = 'sleep'; return <SpritePoseRow pose={key} label="通用默认图" description={restDescription} customUrl={sprites.sleep} inheritedUrl={sprites.idle} inheritedNote="跟随待机图" library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} /> })()}
-        </div>
-
-        <div className="sprite-section-title">消息弹窗</div>
-        <div className="sprite-rows">
-          {NOTIFY_POSES.map((key) => (
-            <SpritePoseRow key={key} pose={key} label="默认头像" description="桌宠弹出提醒时左边的小图。在「提醒与报时」里给消息单独指定了图片的，优先用那张。" customUrl={sprites[key]} library={library} choosing={choosingPose === key} onChoose={setChoosingPose} onUpload={handlePick} onUseLibrary={useLibraryForPose} onReset={handleReset} />
-          ))}
-        </div>
       </div>
 
       {!embedded && <button className="close-btn" onClick={() => onClose?.() ?? window.api.closeCurrentWindow()}>关闭</button>}

@@ -48,6 +48,8 @@ import {
   type SpriteKey,
   isSpriteKey,
   stateSpriteKey,
+  migrateRestSprite,
+  unifyStateSprites,
   getAllCustomSprites,
   setCustomSprite,
   setStaticSprite,
@@ -437,6 +439,7 @@ app.whenReady().then(() => {
   if (previousVersion && previousVersion !== currentVersion) saveUpdateSafetyBackup(previousVersion, currentVersion)
   setLastAppVersion(currentVersion)
   migrateDiaryImages()
+  migrateRestSprite(getWorkStates().filter(state=>state.id!=='focus').map(state=>state.id))
   const seeded=seedBundledUserSprites()
   if(seeded.added&&seeded.randomIconTags.length){
     const preferences=getNotificationPreferences()
@@ -646,6 +649,10 @@ ipcMain.handle('sprites:user-delete',(_event,id:string)=>{
   return true
 })
 ipcMain.handle('sprites:user-update', (_event,id:string,patch:{name?:string;tags?:string[]}) => updateUserSprite(id,patch))
+ipcMain.handle('sprites:unify', (_event,key:SpriteKey) => {
+  if(!isSpriteKey(key))return null
+  const sprites=unifyStateSprites(key);broadcastSprites();return sprites
+})
 ipcMain.handle('sprites:user-apply-pose', (_event,id:string,pose:SpriteKey) => {
   const url=applyUserSpriteToPose(id,pose);if(url)broadcastSprites();return url
 })

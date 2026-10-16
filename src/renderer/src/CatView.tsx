@@ -41,10 +41,10 @@ export default function CatView(): React.JSX.Element {
     return () => { off.forEach(f => f()); clearTimeout(clickTimer.current) }
   }, [])
   useEffect(()=>{const frame=requestAnimationFrame(reportCatShape);return()=>cancelAnimationFrame(frame)},[layout?.petWidth,layout?.petHeight,state,sprites])
-  // A state's own image wins; otherwise focus shows the idle image and every
-  // other state the rest image (which itself falls back to the idle image).
+  // A state's own image wins; otherwise every state follows the focus (idle)
+  // image. With no custom images at all, non-focus states show the sleeping cat.
   const petImage = (current: WorkState | null): string => (current && sprites[`state-${current}`]) ||
-    (current === 'focus' ? sprites.idle ?? DEFAULT_IMAGES.idle : sprites.sleep ?? sprites.idle ?? DEFAULT_IMAGES.sleep)
+    sprites.idle || (current === 'focus' ? DEFAULT_IMAGES.idle : DEFAULT_IMAGES.sleep)
   return <>
     {layout?.bubbleOpen && <div className={`pet-bubble-anchor${layout.bubbleBelow ? ' pet-bubble-anchor--below' : ''}`} style={{ left: layout.bubbleLeft, top: layout.bubbleTop ?? 0, transform: `scale(${layout.bubbleScale ?? 1})`, transformOrigin: 'top left', '--bubble-tip-left': `${layout.tipLeft ?? 160}px` } as CSSProperties}><StatusPanel /></div>}
     <div ref={stageRef} style={layout ? { position: 'absolute', left: layout.petLeft, top: layout.petTop, width: layout.petWidth, height: layout.petHeight } : undefined} className={`scene-stage${dragging ? ' scene-stage--dragging' : ''}`}

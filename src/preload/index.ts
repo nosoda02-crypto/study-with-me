@@ -150,6 +150,7 @@ const api = {
   updateUserSprite(id:string,patch:Partial<Pick<UserSpriteItem,'name'|'tags'>>):Promise<UserSpriteItem|null> { return ipcRenderer.invoke('sprites:user-update',id,patch) },
   deleteUserSprite(id:string):Promise<boolean> { return ipcRenderer.invoke('sprites:user-delete',id) },
   applyUserSprite(id:string,target:'cat'|'notify'):Promise<SpriteMap|null> { return ipcRenderer.invoke('sprites:user-apply',id,target) },
+  unifyStateSprites(key:SpriteKey):Promise<SpriteMap|null> { return ipcRenderer.invoke('sprites:unify',key) },
   applyUserSpriteToPose(id:string,pose:SpriteKey):Promise<string|null> { return ipcRenderer.invoke('sprites:user-apply-pose',id,pose) },
   getStartupEnabled():Promise<boolean>{return ipcRenderer.invoke('startup:get')},
   setStartupEnabled(enabled:boolean):Promise<boolean>{return ipcRenderer.invoke('startup:set',enabled)},

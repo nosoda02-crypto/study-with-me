@@ -8,9 +8,9 @@ import { join } from 'path'
 import stats from './store'
 import tasks, { getTaskData } from './tasksStore'
 import { getDiaryBackup, replaceDiaryBackup } from './diaryStore'
-import settings from './settingsStore'
+import settings, { getWorkStates } from './settingsStore'
 import { workStore, checkpointWorkState, reloadWorkState, type WorkStateSchema } from './workStateStore'
-import { getAllCustomSprites, getSpriteLibraryBackup, getRemovedSeeds, listUserSpriteTags, replaceSpriteLibraryBackup, isSpriteKey } from './spriteStore'
+import { getAllCustomSprites, getSpriteLibraryBackup, getRemovedSeeds, listUserSpriteTags, replaceSpriteLibraryBackup, isSpriteKey, migrateRestSprite } from './spriteStore'
 import study,{getStudyData} from './studyStore'
 import { validStudyInput } from '../shared/study'
 import music,{flushMusic} from './musicStore'
@@ -134,6 +134,8 @@ export async function importBackup(parent: BrowserWindow, prepare: () => void = 
     renameSync(staging, live); swapped = true
     stats.store = data.stats; tasks.store = data.tasks;study.store=data.study??{items:[]};music.store=data.music??{enabled:false,history:{}}; replaceDiaryBackup(data.diary); settings.store = { ...PANEL_DEFAULTS, ...data.settings, accentColor:data.settings.accentColor ?? DEFAULT_ACCENT_COLOR, workStates: data.settings.workStates ?? DEFAULT_WORK_STATES, notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(data.settings.notifications ?? {}), templates:{...DEFAULT_NOTIFICATION_PREFERENCES.templates,...(data.settings.notifications?.templates ?? {})},templateIcons:{...DEFAULT_NOTIFICATION_PREFERENCES.templateIcons,...(data.settings.notifications?.templateIcons??{})},randomIconTags:data.settings.notifications?.randomIconTags??(data.settings.notifications as any)?.randomIconFolders??[] }, visualVersion: data.settings.visualVersion ?? 1, theme: data.settings.theme ?? 'system' }
     replaceSpriteLibraryBackup(data.spriteLibrary ?? [],data.spriteTags??[],data.spriteRemovedSeeds)
+    // Older backups carry a shared rest image; turn it into per-state images.
+    migrateRestSprite(getWorkStates().filter(state=>state.id!=='focus').map(state=>state.id))
     const work: WorkStateSchema = structuredClone(data.work)
     work.startedToday=work.startedToday??work.segments.length>0
     for (const s of work.segments) if (s.endedAt === null) s.endedAt = Math.max(s.startedAt, work.checkpoint)

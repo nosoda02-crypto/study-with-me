@@ -81,21 +81,21 @@ test('backup round trip restores all stores and sprites; invalid import makes no
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64')
     fs.writeFileSync(path.join(h.root, 'source.png'), png); sprite.setStaticSprite(path.join(h.root, 'source.png'))
     const libraryItem=sprite.addUserSprite(path.join(h.root,'source.png'));sprite.updateUserSprite(libraryItem.id,{tags:['治愈系','小猫','原创']});sprite.setUserSpriteTags(['治愈系','小猫','原创','未使用标签'])
-    assert.equal(sprite.getAllCustomSprites().sleep, sprite.getAllCustomSprites().idle)
+    assert.match(sprite.getAllCustomSprites().idle, /^data:image\/png;base64,/)
     w.switchState('focus'); h.advance(90_000); w.recordSegmentKeystroke(); w.setRecordingPaused(true)
     d.saveEntry('2026-09-19', { text: '今日记录', images: [sprite.getAllCustomSprites().idle] }); t.addTask('写论文', true)
     await b.exportBackup({})
     const safety=b.saveUpdateSafetyBackup('0.1.0','0.2.0');assert.equal(fs.existsSync(safety),true)
     const exported = JSON.parse(fs.readFileSync(path.join(h.root, 'export.json')))
     b.validateBackup(exported)
-    d.deleteEntry('2026-09-19'); sprite.resetCustomSprite('sleep');sprite.replaceSpriteLibraryBackup([]); w.resetTodayRecording(); settings.setNotificationPreferences({...settings.getNotificationPreferences(),customRules:[]})
+    d.deleteEntry('2026-09-19'); sprite.resetCustomSprite('idle');sprite.replaceSpriteLibraryBackup([]); w.resetTodayRecording(); settings.setNotificationPreferences({...settings.getNotificationPreferences(),customRules:[]})
     assert.equal(await b.importBackup({}), true)
     assert.equal(d.getEntry('2026-09-19').text, '今日记录')
     assert.equal(w.getWorkSnapshot().companionSeconds, 90)
     assert.equal(w.getWorkSnapshot().paused, true)
     assert.equal(settings.getTheme(), 'dark')
     assert.equal(settings.getNotificationPreferences().customRules[0].message, '起来走一走')
-    assert.equal(sprite.getAllCustomSprites().sleep, exported.sprites.sleep)
+    assert.equal(sprite.getAllCustomSprites().idle, exported.sprites.idle)
     assert.equal(sprite.listUserSprites()[0].tags[0],'治愈系')
     assert.equal(sprite.listUserSpriteTags().includes('未使用标签'),true)
     assert.equal(fs.readdirSync(path.join(h.root, 'backups')).length, 2)
@@ -424,4 +424,21 @@ test('each work state can have its own pet image',()=>{
   assert.equal(sprite.getAllCustomSprites().idle,undefined)
   sprite.resetCustomSprite('state-lunch')
   assert.equal(sprite.getAllCustomSprites()['state-lunch'],undefined)
+})
+test('an old shared rest image becomes per-state images, and unify gives every state one image',()=>{
+  const fs=require('fs'),path=require('path')
+  const h=harness();fs.rmSync(path.join(h.root,'sprites'),{recursive:true,force:true});fs.mkdirSync(h.root,{recursive:true})
+  const sprite=h.load('src/main/spriteStore.ts')
+  const png=n=>{const f=path.join(h.root,`img-${n}.png`);fs.writeFileSync(f,Buffer.concat([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64'),Buffer.alloc(n)]));return f}
+  sprite.setCustomSprite('idle',png(1));sprite.setCustomSprite('sleep',png(2));sprite.setCustomSprite('state-lunch',png(3))
+  sprite.migrateRestSprite(['break','lunch'])
+  let all=sprite.getAllCustomSprites()
+  assert.equal(all.sleep,undefined)                       // shared rest image is gone
+  assert.equal(all['state-break'].length>0,true)           // break inherits the old rest image
+  assert.notEqual(all['state-break'],all['state-lunch'])   // lunch keeps its own image
+  sprite.migrateRestSprite(['break','lunch'])              // idempotent
+  const lunch=all['state-lunch']
+  all=sprite.unifyStateSprites('state-lunch')
+  assert.equal(all.idle,lunch)
+  assert.deepEqual(Object.keys(all).filter(k=>k.startsWith('state-')),[])
 })
