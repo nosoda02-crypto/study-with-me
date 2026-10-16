@@ -1,6 +1,6 @@
 {
   "name": "study-with-me",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Study With Me - 桌面猫咪学习伴侣 - 打字统计 / 陪伴时长 / 日记 / 任务",
   "main": "./out/main/index.js",
   "author": "Study With Me contributors",
