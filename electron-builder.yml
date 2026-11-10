@@ -5,6 +5,14 @@ directories:
   output: dist
 files:
   - out/**/*
+  # uiohook-napi ships build tooling (a bundled python3), its C sources and
+  # other platforms' binaries; the Mac app only needs its compiled .node file.
+  - "!node_modules/uiohook-napi/build/node_gyp_bins/**"
+  - "!node_modules/uiohook-napi/libuiohook/**"
+  - "!node_modules/uiohook-napi/src/**"
+  - "!node_modules/uiohook-napi/prebuilds/{linux,win32}-*/**"
+# Trims unused Chromium locales from the Electron framework and re-signs (see script).
+afterPack: scripts/after-pack.cjs
 extraResources:
   - from: resources/trayIconTemplate.png
     to: trayIconTemplate.png
