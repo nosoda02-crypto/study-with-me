@@ -1,5 +1,7 @@
 import { getPanelPreferences } from './settingsStore'
 import { bubbleBaseHeight } from '../shared/appearance'
+import { musicRowVisible } from '../shared/music'
+import { getMusicSnapshot } from './musicStore'
 import type { NoticeLocation } from '../shared/notifications'
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
@@ -105,7 +107,7 @@ export function createStatusWindow(parent: BrowserWindow): BrowserWindow {
   const { singleScale, panelFontScale } = getPanelPreferences()
   const win = new BrowserWindow({
     width: Math.ceil(320 * singleScale),
-    height: Math.ceil(bubbleBaseHeight(panelFontScale) * singleScale),
+    height: Math.ceil(bubbleBaseHeight(panelFontScale, musicRowVisible(getMusicSnapshot())) * singleScale),
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -136,7 +138,8 @@ export function positionStatusWindow(win: BrowserWindow, parent: BrowserWindow):
   const area = screen.getDisplayMatching(pet).workArea
   const { singleScale, panelFontScale } = getPanelPreferences()
   const width = Math.ceil(320 * singleScale)
-  const height = Math.ceil(bubbleBaseHeight(panelFontScale) * singleScale)
+  const withMusic = musicRowVisible(getMusicSnapshot())
+  const height = Math.ceil(bubbleBaseHeight(panelFontScale, withMusic) * singleScale)
   const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(value,max))
   const aboveFits=anchor.y-height>=area.y
   const belowFits=pet.y+pet.height+height<=area.y+area.height
@@ -162,7 +165,7 @@ export function positionStatusWindow(win: BrowserWindow, parent: BrowserWindow):
     placement,
     bubbleScale: singleScale,
     tipLeft: clamp((targetX-x)/singleScale,24,296),
-    tipTop:clamp((anchor.y-y+18)/singleScale,24,bubbleBaseHeight(panelFontScale)-24)
+    tipTop:clamp((anchor.y-y+18)/singleScale,24,bubbleBaseHeight(panelFontScale,withMusic)-24)
   }
   win.setBounds({ x: Math.round(x), y: Math.round(y), width, height }, false)
   win.webContents.send('status:layout', layout)

@@ -1,3 +1,4 @@
+import { musicRowVisible } from '../shared/music'
 import type { PanelPreferences } from '../shared/appearance'
 import { validNoticeRule, noticeRuleMatches, isKeystrokeMilestone, renderNoticeTemplate, effectiveIconMode, type NotificationPreferences, type NoticeTemplateKey } from '../shared/notifications'
 import { validWorkStateDefinition, type WorkStateDefinition } from '../shared/workStates'
@@ -121,6 +122,14 @@ function setStartupEnabled(enabled:boolean):boolean{
   return getStartupEnabled()
 }
 let trayHandle: TrayHandle | null = null
+// The status bubble is one row taller while it shows music; resize it when that flips.
+let statusShowsMusic = musicRowVisible(getMusicSnapshot())
+function fitStatusWindowToMusic(): void {
+  const next = musicRowVisible(getMusicSnapshot())
+  if (next === statusShowsMusic) return
+  statusShowsMusic = next
+  if (catWindow && statusWindow && !statusWindow.isDestroyed() && statusWindow.isVisible()) positionStatusWindow(statusWindow, catWindow)
+}
 // Dev build only: notice when `npm run build` replaced the code this process is running.
 let codeUpdated = false
 function watchForCodeUpdates(): void {
@@ -512,7 +521,7 @@ app.whenReady().then(() => {
   catWindow.on('move', reposition)
   catWindow.on('resize', reposition)
   const flushInterval = setInterval(flushRuntime, 30_000)
-  const musicInterval=setInterval(()=>{void sampleMusic().then(snapshot=>{for(const win of BrowserWindow.getAllWindows())win.webContents.send('music:updated',snapshot)})},5000)
+  const musicInterval=setInterval(()=>{void sampleMusic().then(snapshot=>{for(const win of BrowserWindow.getAllWindows())win.webContents.send('music:updated',snapshot);fitStatusWindowToMusic()})},5000)
   void sampleMusic()
   // Explicit switches broadcast themselves; the tick only reports changes it
   // detects (day rollover, wake restore). Panels keep their own timers for live
@@ -752,6 +761,7 @@ ipcMain.handle('music:set-enabled',async(_event,enabled:boolean)=>{
   setMusicTracking(enabled)
   const snapshot=enabled?await sampleMusic():getMusicSnapshot()
   for(const win of BrowserWindow.getAllWindows())win.webContents.send('music:updated',snapshot)
+  fitStatusWindowToMusic()
   return snapshot
 })
 ipcMain.handle('music:statistics',(_event,period:CheckinPeriod,anchorDate:string)=>{

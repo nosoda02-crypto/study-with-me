@@ -1108,14 +1108,14 @@ h1,h2,h3,p {
 }
 /* A small speech bubble within the pet window; the tip points at its head. */
 
-.pet-bubble-window { width:320px; height:var(--bubble-height, 306px); padding:6px 6px 14px; transform:scale(var(--panel-scale,1)); transform-origin:top left; }
+.pet-bubble-window { width:320px; height:calc(100vh / var(--panel-scale,1)); padding:6px 6px 14px; transform:scale(var(--panel-scale,1)); transform-origin:top left; }
 .pet-bubble-window--below { padding-top:14px; padding-bottom:6px; }
 .pet-bubble-window--below .pet-bubble::after { top:-7px; bottom:auto; transform:rotate(225deg); }
 .pet-bubble-window--left { padding-right:14px; padding-bottom:6px; }
 .pet-bubble-window--right { padding-left:14px; padding-bottom:6px; }
 .pet-bubble-window--left .pet-bubble::after { left:auto;right:-7px;top:calc(var(--bubble-tip-top,40px) - 7px);bottom:auto;transform:rotate(-45deg); }
 .pet-bubble-window--right .pet-bubble::after { left:-7px;top:calc(var(--bubble-tip-top,40px) - 7px);bottom:auto;transform:rotate(135deg); }
-.pet-bubble.status-window { position:relative; padding:12px 13px 10px; height:var(--bubble-height, 286px); border-radius:17px; overflow:visible; background:#f8f9fcf5; box-shadow:0 2px 7px #14203414; }
+.pet-bubble.status-window { position:relative; padding:12px 13px 10px; height:100%; border-radius:17px; overflow:visible; background:#f8f9fcf5; box-shadow:0 2px 7px #14203414; }
 .pet-bubble::after { content:''; position:absolute; bottom:-7px; left:calc(var(--bubble-tip-left, 50%) - 7px); width:14px; height:14px; background:#f8f9fc; transform:rotate(45deg); border-right:1px solid #ffffff99; border-bottom:1px solid #ffffff99; border-radius:0 0 4px 0; }
 .bubble-header { display:flex; align-items:center; justify-content:space-between; height:23px; }
 .pet-bubble .recording-label { margin:0; font-size:calc(11px * var(--panel-font-scale, 1)); gap:7px; }
@@ -1383,15 +1383,8 @@ h1,h2,h3,p {
 .state-images-heading .text-button:disabled { opacity:.4; }
 .state-images-confirm { margin-bottom:8px; border-radius:12px; }
 .sprite-library-heading-actions .text-button.secondary { color:var(--secondary); }
-/* Status bubble: fixed-height column. The music row is always reserved and the
-   reminders take whatever space is left (three rows), so nothing jumps or clips. */
-.pet-bubble.status-window { display:flex; flex-direction:column; }
-.pet-bubble.status-window>* { flex:none; }
-.pet-bubble .bubble-music.is-idle strong { color:var(--secondary); font-weight:500; }
-.pet-bubble .bubble-music.is-idle>span { opacity:.55; }
+/* Status bubble: thin scrollbar under the state row when there are many states. */
 .pet-bubble .status-options { scrollbar-width:thin; }
 .pet-bubble .status-options::-webkit-scrollbar { height:3px; }
 .pet-bubble .status-options::-webkit-scrollbar-thumb { border-radius:3px; background:color-mix(in srgb,var(--accent-base) 22%,transparent); }
-.pet-bubble.status-window .bubble-tasks { flex:1 1 auto; height:auto; min-height:0; grid-template-rows:repeat(3,minmax(0,1fr)); }
-.pet-bubble.status-window .bubble-footer { padding-top:6px; }
 

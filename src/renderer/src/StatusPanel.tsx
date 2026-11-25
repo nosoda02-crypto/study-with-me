@@ -4,6 +4,7 @@ import { DEFAULT_WORK_STATES, WORK_STATE_PATHS, type WorkStateDefinition } from 
 import { todayStr } from '../../shared/date'
 import { compareBubbleTasks } from '../../shared/tasks'
 import type { MusicSnapshot } from '../../shared/music'
+import { musicRowVisible } from '../../shared/music'
 
 export function duration(seconds: number): string {
   const n = Math.floor(seconds)
@@ -66,8 +67,7 @@ export default function StatusPanel(): React.JSX.Element {
     </header>
     {data ? <>
       <div className="bubble-message"><span>今天已经陪你</span><strong className="companion-clock">{duration(data.companionSeconds)}</strong><small>敲了 <b className="bubble-number">{data.keystrokesToday.toLocaleString()}</b> 次键 · 还有 <b className="bubble-number">{tasks.length}</b> 项待办</small></div>
-      {/* Always occupies its row so the bubble doesn't change height when music starts. */}
-      <div className={`bubble-music${music.playing?' is-playing':''}${music.enabled&&(music.playing||music.todaySeconds>0)?'':' is-idle'}`}><span>♪</span><div>{music.enabled?<><strong>{music.playing?`正在听歌${music.title?` · ${music.title}`:''}`:music.todaySeconds>0?'今天听过歌':'现在没有在听歌'}</strong><small>今日已听歌 <b>{listeningDuration(music.todaySeconds)}</b>{music.playing&&music.artist?` · ${music.artist}`:''}</small></>:<><strong>听歌统计未开启</strong><small>在手帐「统计」页打开 Apple Music 开关</small></>}</div></div>
+      {musicRowVisible(music)&&<div className={`bubble-music${music.playing?' is-playing':''}`}><span>♪</span><div><strong>{music.playing?`正在听歌${music.title?` · ${music.title}`:''}`:'今天听过歌'}</strong><small>今日已听歌 <b>{listeningDuration(music.todaySeconds)}</b>{music.playing&&music.artist?` · ${music.artist}`:''}</small></div></div>}
       <div className="bubble-section-label"><span>切换状态</span><small>今日累计</small></div>
       <div className="status-options" aria-label="切换当前状态">{states.map(s => <button key={s.id} style={{'--state-color':s.color} as React.CSSProperties}
         className={data.state === s.id ? 'selected' : ''} aria-pressed={data.state === s.id}

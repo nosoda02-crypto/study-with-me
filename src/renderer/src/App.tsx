@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import type { StatusWindowLayout } from '../../preload'
-import { bubbleBaseHeight, type PanelPreferences } from '../../shared/appearance'
+import type { PanelPreferences } from '../../shared/appearance'
 import CatView from './CatView'
 import HubPanel from './HubPanel'
 import StatusPanel from './StatusPanel'
@@ -25,7 +25,6 @@ function App(): React.JSX.Element {
       css.setProperty('--panel-font-scale', String(s.panelFontScale ?? 1))
       css.setProperty('--panel-scale', String(singleSurface?(s.singleScale??s.panelScale??1):1))
       css.setProperty('--notification-scale',String(s.notificationScale??1))
-      css.setProperty('--bubble-height', `${bubbleBaseHeight(s.panelFontScale ?? 1) - 20}px`)
     }
     window.api.getWindowSettings().then(apply)
     window.api.getAccentColor().then(applyAccent)
