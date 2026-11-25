@@ -25,4 +25,5 @@ export const ACCENT_PRESETS = [
 export function validAccentColor(value: unknown): value is string { return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) }
 export const PANEL_DEFAULTS: PanelPreferences = { panelScale:1,panelOpacity:1,panelFontScale:1,singleScale:1,singleOpacity:1,hubOpacity:1,notificationScale:1,notificationOpacity:1 }
 export const PANEL_LIMITS = { panelScale:[0.8,1.5],panelOpacity:[0.4,1],panelFontScale:[0.85,1.3],singleScale:[0.7,1.6],singleOpacity:[0.35,1],hubOpacity:[0.4,1],notificationScale:[0.7,1.6],notificationOpacity:[0.35,1] } as const
-export function bubbleBaseHeight(fontScale: number): number { return Math.ceil(306 + Math.max(0, fontScale - 1) * 270) }
+// 366 = header, clock, a reserved music row, states, three rows of reminders, footer.
+export function bubbleBaseHeight(fontScale: number): number { return Math.ceil(366 + Math.max(0, fontScale - 1) * 300) }

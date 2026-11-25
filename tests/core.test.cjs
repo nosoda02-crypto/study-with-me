@@ -150,7 +150,7 @@ test('speech bubble uses the sprite crown and moves sideways without covering th
   const above=w.positionStatusWindow(status,pet)
   assert.equal(above.placement,'above')
   assert.equal(statusBounds.x+above.tipLeft,petBounds.x+48)
-  const oversized=h.load('src/main/settingsStore.ts');oversized.setPanelPreference('singleScale',2)
+  const oversized=h.load('src/main/settingsStore.ts');oversized.setPanelPreference('singleScale',1.4)
   const side=w.positionStatusWindow(status,pet)
   assert.equal(side.placement,'right')
   assert.ok(statusBounds.x>=petBounds.x+30+110)

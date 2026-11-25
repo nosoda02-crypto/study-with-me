@@ -1383,4 +1383,15 @@ h1,h2,h3,p {
 .state-images-heading .text-button:disabled { opacity:.4; }
 .state-images-confirm { margin-bottom:8px; border-radius:12px; }
 .sprite-library-heading-actions .text-button.secondary { color:var(--secondary); }
+/* Status bubble: fixed-height column. The music row is always reserved and the
+   reminders take whatever space is left (three rows), so nothing jumps or clips. */
+.pet-bubble.status-window { display:flex; flex-direction:column; }
+.pet-bubble.status-window>* { flex:none; }
+.pet-bubble .bubble-music.is-idle strong { color:var(--secondary); font-weight:500; }
+.pet-bubble .bubble-music.is-idle>span { opacity:.55; }
+.pet-bubble .status-options { scrollbar-width:thin; }
+.pet-bubble .status-options::-webkit-scrollbar { height:3px; }
+.pet-bubble .status-options::-webkit-scrollbar-thumb { border-radius:3px; background:color-mix(in srgb,var(--accent-base) 22%,transparent); }
+.pet-bubble.status-window .bubble-tasks { flex:1 1 auto; height:auto; min-height:0; grid-template-rows:repeat(3,minmax(0,1fr)); }
+.pet-bubble.status-window .bubble-footer { padding-top:6px; }
 

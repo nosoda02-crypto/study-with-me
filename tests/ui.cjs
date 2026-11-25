@@ -20,15 +20,15 @@ async function click(win,text) { return win.webContents.executeJavaScript(`Array
 async function capture(win,name) { fs.writeFileSync(path.join(__dirname,'screenshots',name+'.png'),(await win.webContents.capturePage()).toPNG()) }
 app.whenReady().then(async()=>{
   fs.mkdirSync(path.join(__dirname,'screenshots'),{recursive:true})
-  const status=await render('/hover-card',308,286)
+  const status=await render('/hover-card',320,366)
   await capture(status,'status')
   assert.match(await status.webContents.executeJavaScript('document.querySelector(".bubble-tasks").textContent'),/阅读 20 页/)
   assert.match(await status.webContents.executeJavaScript('document.querySelector(".bubble-music").textContent'),/正在听歌.*晴天.*今日已听歌/)
   assert.equal(await status.webContents.executeJavaScript('document.querySelectorAll(".bubble-tasks>div").length'),3)
-  assert.equal(await status.webContents.executeJavaScript('getComputedStyle(document.querySelector(".bubble-tasks")).gridTemplateRows.split(" ").length'),2)
+  assert.equal(await status.webContents.executeJavaScript('getComputedStyle(document.querySelector(".bubble-tasks")).gridTemplateRows.split(" ").length'),3)
   assert.equal(await status.webContents.executeJavaScript('document.querySelector(".bubble-tasks").scrollWidth > document.querySelector(".bubble-tasks").clientWidth'),false)
-  await status.webContents.executeJavaScript(`window.api.addTask('整理资料',false);window.api.addTask('回复消息',false)`);await pause(1100)
-  assert.equal(await status.webContents.executeJavaScript('document.querySelectorAll(".bubble-tasks>div").length'),5)
+  await status.webContents.executeJavaScript(`window.api.addTask('整理资料',false);window.api.addTask('回复消息',false);window.api.addTask('订会议室',false);window.api.addTask('交周报',false)`);await pause(1100)
+  assert.equal(await status.webContents.executeJavaScript('document.querySelectorAll(".bubble-tasks>div").length'),7)
   assert.equal(await status.webContents.executeJavaScript('document.querySelector(".bubble-tasks").scrollWidth > document.querySelector(".bubble-tasks").clientWidth'),true)
   assert.equal(await status.webContents.executeJavaScript('document.querySelector(".bubble-footer").getBoundingClientRect().bottom <= innerHeight'),true)
   assert.equal(await status.webContents.executeJavaScript('document.querySelectorAll(".status-options button small").length'),5)
@@ -284,14 +284,14 @@ app.whenReady().then(async()=>{
   // README screenshots with the bundled characters and the author's real settings.
   // Hero: the real status bubble window above the pet window, composed onto one transparent canvas.
   const renderClear=async(hash,width,height)=>{const win=new BrowserWindow({width,height,useContentSize:true,frame:false,show:false,transparent:true,backgroundColor:'#00000000',webPreferences:{preload:path.join(__dirname,'ui-preload.cjs'),sandbox:false,additionalArguments:['--readme-demo']}});await win.loadFile(path.join(__dirname,'../out/renderer/index.html'),{hash});await pause(600);return win}
-  const readmeBubble=await renderClear('/hover-card',320,310)
+  const readmeBubble=await renderClear('/hover-card',320,366)
   await readmeBubble.webContents.executeJavaScript(`window.api.switchWorkState('focus');window.testApi.emit('status-layout',{placement:'above',bubbleBelow:false,tipLeft:160,tipTop:40,bubbleScale:1})`);await pause(600)
   const bubbleShot=(await readmeBubble.webContents.capturePage()).toDataURL();readmeBubble.destroy()
   const readmePet=await renderClear('',170,310)
   await readmePet.webContents.executeJavaScript(`window.api.switchWorkState('focus')`);await pause(400)
   const petShot=(await readmePet.webContents.capturePage()).toDataURL();readmePet.destroy()
-  const hero=new BrowserWindow({width:320,height:610,useContentSize:true,frame:false,show:false,transparent:true,backgroundColor:'#00000000'})
-  await hero.loadURL('data:text/html,'+encodeURIComponent(`<body style="margin:0;background:transparent"><img src="${bubbleShot}" style="position:absolute;left:0;top:0;width:320px;height:310px"><img src="${petShot}" style="position:absolute;left:75px;top:288px;width:170px;height:310px"></body>`));await pause(300)
+  const hero=new BrowserWindow({width:320,height:666,useContentSize:true,frame:false,show:false,transparent:true,backgroundColor:'#00000000'})
+  await hero.loadURL('data:text/html,'+encodeURIComponent(`<body style="margin:0;background:transparent"><img src="${bubbleShot}" style="position:absolute;left:0;top:0;width:320px;height:366px"><img src="${petShot}" style="position:absolute;left:75px;top:344px;width:170px;height:310px"></body>`));await pause(300)
   await capture(hero,'readme-pet-bubble');hero.destroy()
   const readmeNotify=await render('/notify',340,110,['--readme-demo'])
   await readmeNotify.webContents.executeJavaScript(`window.api.getSprites().then(s=>window.testApi.emit('notify',{title:'少天',message:'今日的小目标完成了！休息一下再继续吧。',icon:s.notifyIcon}))`);await pause(500)
